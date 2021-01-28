@@ -8,6 +8,25 @@ import maya.cmds as mc
 import maya.OpenMaya as om
 
 
+def colors(color):
+    dict_colors = {
+        "yellow": 17,
+        "red": 13,
+        "blue": 6,
+        "cyan": 18,
+        "green": 7,
+        "darkRed": 4,
+        "darkBlue": 15,
+        "white": 16,
+        "black": 1,
+        "gray": 3,
+        "none": 0,
+    }
+
+    if color in dict_colors:
+        return dict_colors[color]
+
+
 def lock_channels(obj='', channels=['t', 'r', 's']):
     # lock control channels
     single_attr_lock_list = []
@@ -72,15 +91,20 @@ def joint_constraint(driver1, driven, blender='', driver2='', channels=['t', 'r'
     Can also be used for 1:1 joint connections
 
     Args:
-        driver1: string, list - joint(s) to control the driven joint chain. FK
-        driven: string, list - joint(s) to be driven by driver(s)
-        blender: string - controller used for blending between FK and IK
-        driver2: string, list - joint(s) to control the driven joint chain. IK
-        channels: list - channels that should be constrained
-
-    Returns:
+        driver1 (str, list): joint(s) to control the driven joint chain. FK
+        driven (str, list): joint(s) to be driven by driver(s)
+        blender (str): controller used for blending between FK and IK
+        driver2 (str, list): joint(s) to control the driven joint chain. IK
+        channels (list): channels that should be constrained
 
     """
+    if type(driver1) is str:
+        driver1.split()
+    if type(driver2) is str:
+        driver2.split()
+    if type(driven) is str:
+        driven.split()
+
     if blender:
         for c in channels:
             for driven, fk, ik in zip(driven, driver1, driver2):

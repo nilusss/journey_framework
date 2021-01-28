@@ -5,23 +5,10 @@ module for making curve controls
 import pymel.core as pm
 import journey.lib.utils.shapes as shapes
 import journey.lib.utils.tools as tools
+from journey.lib.utils.tools import lock_channels, colors
 
 reload(tools)
 reload(shapes)
-
-dic_colors = {
-    "yellow": 17,
-    "red": 13,
-    "blue": 6,
-    "cyan": 18,
-    "green": 7,
-    "darkRed": 4,
-    "darkBlue": 15,
-    "white": 16,
-    "black": 1,
-    "gray": 3,
-    "none": 0,
-}
 
 
 class Control:
@@ -33,10 +20,19 @@ class Control:
                  rot_shape=False,
                  parent='',
                  shape='circle',
-                 lock_channels=['s', 'v']):
-        """
+                 channels=['s', 'v']):
+        """Short text
+
+        Desc
+
         Args:
-            prefix:
+            prefix (str): name for the controller
+            scale (float, int): initial scale of the controller
+            trans_to (str): object to translate the controller to
+            rot_to (str): object to rotate the controller to
+            rot_shape (bool): whether the controller shape should match the top transform node translation
+            parent (str): object to parent the controller under
+            shape (str): visual shape to give the controller. Usable names can be found under journey.lib.utils.shapes
         """
         self.ctrl_object = None
         self.ctrl_offset = None
@@ -47,7 +43,7 @@ class Control:
         self.rot_shape = rot_shape
         self.parent = parent
         self.shape = shape
-        self.lock_channels = lock_channels
+        self.channels = channels
 
     def set_shape(self, shape):
         # exec("return_shape = shapes.{0}({1}, {2})".format(self.shape, self.scale, self.prefix + '_ctrl'))
@@ -66,17 +62,17 @@ class Control:
         [pm.setAttr(s + '.ove', 1) for s in self.ctrl_object.getShapes()]
 
         if self.prefix.startswith('l_'):
-            [pm.setAttr(s + '.ovc', dic_colors["blue"]) for s in self.ctrl_object.getShapes()]
+            [pm.setAttr(s + '.ovc', colors("blue")) for s in self.ctrl_object.getShapes()]
         elif self.prefix.startswith('r_'):
-            [pm.setAttr(s + '.ovc', dic_colors["red"]) for s in self.ctrl_object.getShapes()]
+            [pm.setAttr(s + '.ovc', colors("red")) for s in self.ctrl_object.getShapes()]
         else:
-            [pm.setAttr(s + '.ovc', dic_colors["yellow"]) for s in self.ctrl_object.getShapes()]
+            [pm.setAttr(s + '.ovc', colors("yellow")) for s in self.ctrl_object.getShapes()]
 
         if color:
-            [pm.setAttr(s + '.ovc', dic_colors[color]) for s in self.ctrl_object.getShapes()]
+            [pm.setAttr(s + '.ovc', colors(color)) for s in self.ctrl_object.getShapes()]
 
     def set_channels(self, channels):
-        attr = tools.lock_channels(self.ctrl_object, channels)
+        attr = lock_channels(self.ctrl_object, channels)
         return attr
 
     def set_translation(self, *args):
@@ -120,7 +116,7 @@ class Control:
         self.set_translation()
         self.set_rotation()
 
-        self.set_channels(self.lock_channels)
+        self.set_channels(self.channels)
 
     def get_ctrl(self, *args):
         return self.ctrl_object

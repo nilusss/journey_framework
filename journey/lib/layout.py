@@ -1,4 +1,3 @@
-import pymel.core as pm
 """
 module for making top rig structure and rig module structure
 """
@@ -10,8 +9,6 @@ from journey.env import JF_VERSION, JF_AUTHOR, JF_NAME
 reload(ctrl)
 reload(tools)
 
-scene_obj_type = 'rig'
-
 
 class Base:
     """
@@ -20,46 +17,54 @@ class Base:
 
     def __init__(self,
                  char_name='new',
+                 scene_obj_type='rig',
                  scale=1.0,
                  global_ctrl_scale=20):
+        """
 
+        Args:
+            char_name (str): name for the base rig grp
+            scene_obj_type (str): object type for the base structure. Usually 'rig'
+            scale (float, int): initial scale of the rig
+            global_ctrl_scale (float, int): initial scale of the master and offset controller
+        """
+        self.char_name = char_name
+        self.scene_obj_type = scene_obj_type
+        self.scale = scale
+        self.global_ctrl_scale = global_ctrl_scale
+
+    def create(self, *args):
         # create initial rig structure groups
-        self.top_grp = pm.group(name=char_name + '_rig_grp', em=1)
+        self.top_grp = pm.group(name=self.char_name + '_rig_grp', em=1)
         self.rig_grp = pm.group(name='rig_grp', em=1, p=self.top_grp)
         self.model_grp = pm.group(name='model_grp', em=1, p=self.top_grp)
-        self.info_grp = pm.group(name='info_grp', em=1, p=self.top_grp)
-        pm.addAttr(self.info_grp, shortName='version', longName='VERSION',
-                   at="enum", enumName=JF_VERSION, keyable=False)
-        pm.setAttr(self.info_grp + '.version', edit=True, channelBox=True)
 
-        # lock info group channels
-        tools.lock_channels(obj=self.info_grp, channels=['t', 'r', 's', 'v'])
+        # lock top group channels
+        tools.lock_channels(obj=self.top_grp, channels=['t', 'r', 's', 'v'])
 
-        # make modelGrp content non-selectable
+        # make model_grp content non-selectable
         pm.setAttr(self.model_grp + '.overrideEnabled', 1)
         pm.setAttr(self.model_grp + '.overrideDisplayType', 2)
 
-        char_name_attr = 'characterName'
-        scene_obj_type_attr = 'sceneObjectType'
+        char_name_attr = 'CHARACTER_NAME'
+        scene_obj_type_attr = 'SCENE_OBJECT_TYPE'
 
-        for at in [char_name_attr, scene_obj_type_attr]:
-            pm.addAttr(self.top_grp, ln=at, dt='string')
-
-        pm.setAttr(self.top_grp + '.' + char_name_attr, char_name,
-                   type='string', lock=1)
-        pm.setAttr(self.top_grp + '.' + scene_obj_type_attr, scene_obj_type,
-                   type='string', lock=1)
+        for attr_name, attr in zip([char_name_attr, scene_obj_type_attr, 'VERSION'],
+                                   [self.char_name, self.scene_obj_type, JF_VERSION]):
+            pm.addAttr(self.top_grp, shortName=attr_name, longName=attr_name,
+                       at="enum", enumName=attr, keyable=False)
+            pm.setAttr(self.top_grp + '.' + attr_name, edit=True, channelBox=True)
 
         # make global control and offset control
         self.global_ctrl = ctrl.Control(prefix='master',
-                                        scale=scale * global_ctrl_scale,
+                                        scale=self.scale * self.global_ctrl_scale,
                                         parent=self.rig_grp,
                                         shape='master',
                                         lock_channels=['v'])
         self.global_ctrl.create()
 
         self.offset_ctrl = ctrl.Control(prefix='offset',
-                                        scale=scale * global_ctrl_scale - 2,
+                                        scale=self.scale * self.global_ctrl_scale - 2,
                                         parent=self.rig_grp,
                                         shape='offset',
                                         lock_channels=['s', 'v'])
@@ -78,8 +83,8 @@ class Base:
         tools.matrix_constraint(self.offset_ctrl.ctrl_object, self.joints_grp, mo=True)
         tools.matrix_constraint(self.offset_ctrl.ctrl_object, self.modules_grp, mo=True)
 
-        self.extraNodesGrp = pm.group(n='extra_grp', em=1, p=self.rig_grp)
-        pm.setAttr(self.extraNodesGrp + '.it', 0, lock=1)
+        self.extra_grp = pm.group(n='extra_grp', em=1, p=self.rig_grp)
+        pm.setAttr(self.extra_grp + '.it', 0, lock=1)
 
 
 class Module:
@@ -92,21 +97,22 @@ class Module:
                  base_rig=None
                  ):
 
+        self.prefix = prefix
+        self.base_rig = base_rig
+
+    def create(self, *args):
         # create initial rig structure groups
-        self.topGrp = pm.group(name=prefix + '_module_grp', em=1)
+        self.top_grp = pm.group(name=self.prefix + '_module_grp', em=1)
+        self.controls_grp = pm.group(name=self.prefix + '_controls_grp', em=1, p=self.top_grp)
+        self.joints_grp = pm.group(name=self.prefix + '_joints_grp', em=1, p=self.top_grp)
+        self.parts_grp = pm.group(name=self.prefix + '_parts_grp', em=1, p=self.top_grp)
+        self.static_grp = pm.group(name=self.prefix + '_static_grp', em=1, p=self.top_grp)
+        # self.info_grp = pm.group(name=prefix + '_info_grp', em=1, p=self.topGrp)
 
-        self.controls_grp = pm.group(name=prefix + '_controls_grp', em=1, p=self.topGrp)
-        self.joints_grp = pm.group(name=prefix + '_joints_grp', em=1, p=self.topGrp)
-        self.parts_grp = pm.group(name=prefix + '_parts_grp', em=1, p=self.topGrp)
-        self.static_grp = pm.group(name=prefix + '_static_grp', em=1, p=self.topGrp)
-        self.info_grp = pm.group(name=prefix + '_info_grp', em=1, p=self.topGrp)
-
-        #
-        pm.hide(self.parts_grp, self.static_grp, self.joints_grp, self.info_grp)
+        # hide module groups and make static group
+        pm.hide(self.parts_grp, self.static_grp, self.joints_grp)
         pm.setAttr(self.static_grp + '.it', 0, l=1)
 
         # parent module
-
-        if base_rig:
-            pm.parent(self.topGrp, base_rig.modules_grp)
-
+        if self.base_rig:
+            pm.parent(self.top_grp, self.base_rig.modules_grp)
