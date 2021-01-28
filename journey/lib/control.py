@@ -6,18 +6,21 @@ import pymel.core as pm
 import journey.lib.utils.shapes as shapes
 import journey.lib.utils.tools as tools
 from journey.lib.utils.tools import lock_channels, colors
+import journey.lib.utils.color as color
 
 reload(tools)
 reload(shapes)
 
 
 class Control:
+    control_list = []
+
     def __init__(self,
                  prefix='new',
                  scale=1.0,
                  trans_to='',
                  rot_to='',
-                 rot_shape=False,
+                 rot_shape=True,
                  parent='',
                  shape='circle',
                  channels=['s', 'v']):
@@ -34,6 +37,8 @@ class Control:
             parent (str): object to parent the controller under
             shape (str): visual shape to give the controller. Usable names can be found under journey.lib.utils.shapes
         """
+        Control.control_list.append(self)
+
         self.ctrl_object = None
         self.ctrl_offset = None
         self.prefix = prefix
@@ -58,18 +63,20 @@ class Control:
     def set_parent(self):
         pass
 
-    def set_color(self, color=''):
+    def set_color(self, ctrl_color=''):
+        ctrl_color = ctrl_color.upper()
         [pm.setAttr(s + '.ove', 1) for s in self.ctrl_object.getShapes()]
 
         if self.prefix.startswith('l_'):
-            [pm.setAttr(s + '.ovc', colors("blue")) for s in self.ctrl_object.getShapes()]
+            [pm.setAttr(s + '.ovc', color.BLUE) for s in self.ctrl_object.getShapes()]
         elif self.prefix.startswith('r_'):
-            [pm.setAttr(s + '.ovc', colors("red")) for s in self.ctrl_object.getShapes()]
+            [pm.setAttr(s + '.ovc', color.RED) for s in self.ctrl_object.getShapes()]
         else:
-            [pm.setAttr(s + '.ovc', colors("yellow")) for s in self.ctrl_object.getShapes()]
+            [pm.setAttr(s + '.ovc', color.YELLOW) for s in self.ctrl_object.getShapes()]
 
-        if color:
-            [pm.setAttr(s + '.ovc', colors(color)) for s in self.ctrl_object.getShapes()]
+        if ctrl_color:
+            exec('clr_key = color.{0}'.format(ctrl_color))
+            [pm.setAttr(s + '.ovc', clr_key) for s in self.ctrl_object.getShapes()]
 
     def set_channels(self, channels):
         attr = lock_channels(self.ctrl_object, channels)

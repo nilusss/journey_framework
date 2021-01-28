@@ -8,23 +8,23 @@ import maya.cmds as mc
 import maya.OpenMaya as om
 
 
-def colors(color):
-    dict_colors = {
-        "yellow": 17,
-        "red": 13,
-        "blue": 6,
-        "cyan": 18,
-        "green": 7,
-        "darkRed": 4,
-        "darkBlue": 15,
-        "white": 16,
-        "black": 1,
-        "gray": 3,
-        "none": 0,
-    }
-
-    if color in dict_colors:
-        return dict_colors[color]
+# def colors(color):
+#     dict_colors = {
+#         "yellow": 17,
+#         "red": 13,
+#         "blue": 6,
+#         "cyan": 18,
+#         "green": 7,
+#         "darkRed": 4,
+#         "darkBlue": 15,
+#         "white": 16,
+#         "black": 1,
+#         "gray": 3,
+#         "none": 0,
+#     }
+#
+#     if color in dict_colors:
+#         return dict_colors[color]
 
 
 def lock_channels(obj='', channels=['t', 'r', 's']):
@@ -45,7 +45,6 @@ def lock_channels(obj='', channels=['t', 'r', 's']):
 
 
 def matrix_constraint(driver, driven, mo=True, channels=['t', 'r', 's']):
-
     mult_matrix = pm.createNode('multMatrix', n=driven + '_multMatrix')
     decompose_matrix = pm.createNode('decomposeMatrix', n=driven + '_decomposeMatrix')
     pm.connectAttr(mult_matrix + '.matrixSum', decompose_matrix + '.inputMatrix', force=True)
@@ -99,11 +98,11 @@ def joint_constraint(driver1, driven, blender='', driver2='', channels=['t', 'r'
 
     """
     if type(driver1) is str:
-        driver1.split()
+        driver1 = driver1.split()
     if type(driver2) is str:
-        driver2.split()
+        driver2 = driver2.split()
     if type(driven) is str:
-        driven.split()
+        driven = driven.split()
 
     if blender:
         for c in channels:
@@ -117,7 +116,7 @@ def joint_constraint(driver1, driven, blender='', driver2='', channels=['t', 'r'
                 for color, axis in zip(['R', 'G', 'B'], ['x', 'y', 'z']):
                     pm.connectAttr(blend + '.output' + color, driven + '.' + c + axis)
 
-                # Check if the blender controller as the .blend attribute, otherwise create one
+                # Check if the blender controller has the .blend attribute, otherwise create one
                 try:
                     pm.getAttr(blender + '.blend')
                 except Exception as e:
