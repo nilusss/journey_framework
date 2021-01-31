@@ -27,6 +27,13 @@ import maya.OpenMaya as om
 #         return dict_colors[color]
 
 
+def list_check(check):
+    if type(check) is str:
+        check = check.split()
+
+    return check
+
+
 def lock_channels(obj='', channels=['t', 'r', 's']):
     # lock control channels
     single_attr_lock_list = []
@@ -97,12 +104,9 @@ def joint_constraint(driver1, driven, blender='', driver2='', channels=['t', 'r'
         channels (list): channels that should be constrained
 
     """
-    if type(driver1) is str:
-        driver1 = driver1.split()
-    if type(driver2) is str:
-        driver2 = driver2.split()
-    if type(driven) is str:
-        driven = driven.split()
+    driver1 = list_check(driver1)
+    driver2 = list_check(driver2)
+    driven = list_check(driven)
 
     if blender:
         for c in channels:

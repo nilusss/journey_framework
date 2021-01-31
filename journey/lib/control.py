@@ -5,7 +5,7 @@ module for making curve controls
 import pymel.core as pm
 import journey.lib.utils.shapes as shapes
 import journey.lib.utils.tools as tools
-from journey.lib.utils.tools import lock_channels, colors
+from journey.lib.utils.tools import lock_channels
 import journey.lib.utils.color as color
 
 reload(tools)
