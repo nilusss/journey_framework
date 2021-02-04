@@ -1,5 +1,5 @@
 """
-module containing different class solvers for ik twisting, fk, etc.
+module containing different class kinematics for ik and fk.
 """
 import pymel.core as pm
 import journey.lib.control as ctrl
@@ -78,4 +78,11 @@ class FK:
 
 class IK:
     def __init__(self):
+        pass
+
+class Spline:
+    def __init__(self, *args):
+        pass
+
+    def make_stretchy(self, *args):
         pass
