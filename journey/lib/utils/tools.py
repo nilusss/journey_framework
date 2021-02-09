@@ -3,7 +3,7 @@ various tools for the framework
 """
 
 import pymel.core as pm
-from pymel.all import *
+from pymel.all import mel
 import maya.cmds as mc
 import maya.OpenMaya as om
 
@@ -32,6 +32,14 @@ def list_check(check):
         check = check.split()
 
     return check
+
+
+def parent_rm(child, module, module_grp):
+    try:
+        exec('return_module = {}.{}'.format(module, module_grp))
+        pm.parent(child, return_module)
+    except AttributeError as e:
+        print("No rig module to parent under: \"{}\" ".format(str(e)))
 
 
 def lock_channels(obj='', channels=['t', 'r', 's']):
@@ -142,6 +150,140 @@ def matrix_blend(driver1, driven, blender, driver2, channels=['t', 'r', 's']):
         mc.connectAttr(qTE + '.outputRotate', j + '.r')
         mc.connectAttr(blendDecomp + '.outputTranslate', j + '.t')
         mc.connectAttr(blendDecomp + '.outputScale', j + '.s')
+
+
+def joint_duplicate(joint_chain, joint_type, offset_grp='', skip=0):
+    if not skip:
+        skip = 1
+    chain = []
+
+    for i, j in enumerate(joint_chain[::skip]):
+        chain.extend(pm.duplicate(j, parentOnly=True,
+                                  n=j.replace('result_jnt', joint_type + '_jnt')))
+        try:
+            pm.parent(chain[i], offset_grp)
+        except:
+            pass
+        if i > 0:
+            pm.parent(chain[i], chain[i-1])
+
+    return chain
+
+
+def get_mid_joint(joint_chain=[]):
+
+    """Get the middle joint in a joint chain
+
+    Args:
+        joint_chain:
+
+    Returns:
+
+    """
+
+    if (len(joint_chain) % 2) == 0:
+        get_mid_joint = int(len(joint_chain) / 2) - 1
+    else:
+        get_mid_joint = int(len(joint_chain) / 2)
+
+    return get_mid_joint
+
+
+def measure(start, end):
+
+    """Create measure distance between to objects
+
+    Args:
+        start (str): where the measure tool should start
+        end (str): where the measure tool should end
+
+    Returns: distanceBetween node
+
+    """
+
+    dist = pm.createNode('distanceBetween', n='{}_{}_DIST'.format(start, end))
+    pm.connectAttr(start + '.worldMatrix[0]', dist + '.inMatrix1')
+    pm.connectAttr(end + '.worldMatrix[0]', dist + '.inMatrix2')
+
+    return pm.PyNode(dist)
+
+
+def create_line(start="", end="", prefix=""):
+
+    """Create a template line between two objects
+
+    Args:
+        start:
+        end:
+        prefix:
+
+    Returns:
+
+    """
+
+    pos1 = pm.xform(start, q=1, t=1, ws=1)
+    pos2 = pm.xform(end, q=1, t=1, ws=1)
+    crv = pm.curve(n=prefix + 'Line_crv', d=1, p=[pos1, pos2])
+    cls1 = pm.cluster(crv + '.cv[0]', n=prefix + 'Line1_cls', wn=[start, start], bs=True)
+    cls2 = pm.cluster(crv + '.cv[1]', n=prefix + 'Line2_cls', wn=[end, end], bs=True)
+    crv.attr('template').set(1)
+    offset_grp = pm.createNode("transform", name=prefix + 'CrvOffset_grp')
+    offset_grp.attr('inheritsTransform').set(0)
+    pm.parent(crv, offset_grp)
+
+    return {'crv': crv,
+            'grp': offset_grp}
+
+
+def create_loc(pos):
+
+    """Create a locator a the given position
+
+    Args:
+        pos:
+
+    Returns:
+
+    """
+
+    loc = pm.spaceLocator()
+    pm.move(pos.x, pos.y, pos.z, loc)
+
+    return loc
+
+
+def get_pole_vec_pos(joint_list):
+
+    """
+    Create a locator from the joint list
+
+    @param joint_list: list(str), joint list to get the pole vector position from
+    @return: str, newly created locator
+    """
+
+    mid_joint = get_mid_joint(joint_list)
+
+    upper_pos = mc.xform(joint_list[0], q=True, ws=True, t=True)
+    mid_pos = mc.xform(joint_list[mid_joint], q=True, ws=True, t=True)
+    end_pos = mc.xform(joint_list[-1], q=True, ws=True, t=True)
+
+    upper_joint_vec = om.MVector(upper_pos[0], upper_pos[1], upper_pos[2])
+    mid_joint_vec = om.MVector(mid_pos[0], mid_pos[1], mid_pos[2])
+    end_joint_vec = om.MVector(end_pos[0], end_pos[1], end_pos[2])
+
+    line = (end_joint_vec - upper_joint_vec)
+    point = (mid_joint_vec - upper_joint_vec)
+
+    scale_value = (line * point) / (line * line)
+    proj_vec = line * scale_value + upper_joint_vec
+
+    upper_to_mid_len = (mid_joint_vec - upper_joint_vec).length()
+    mid_to_end_len = (end_joint_vec - mid_joint_vec).length()
+    total_length = upper_to_mid_len + mid_to_end_len
+
+    pole_vec_pos = (mid_joint_vec - proj_vec).normal() * total_length + mid_joint_vec
+
+    return create_loc(pole_vec_pos)
 
 
 def joint_constraint(driver1, driven, blender='', driver2='', channels=['t', 'r', 's']):

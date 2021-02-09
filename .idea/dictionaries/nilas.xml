@@ -2,11 +2,14 @@
   <dictionary name="nilas">
     <words>
       <w>bdelete</w>
+      <w>csolver</w>
       <w>ctrls</w>
       <w>darkblue</w>
       <w>darkred</w>
       <w>inbt</w>
       <w>mult</w>
+      <w>proj</w>
+      <w>psolver</w>
       <w>reparent</w>
     </words>
   </dictionary>
