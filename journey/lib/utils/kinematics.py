@@ -104,13 +104,14 @@ class IK:
         self.ik_ctrl = ctrl.Control(prefix=self.prefix + 'IK', trans_to=self.driven[-1],
                                     rot_to=self.driven[-1], scale=self.scale, shape='cube')
         self.ik_ctrl.create()
-        tools.parent_rm(self.ik_ctrl, self.rig_module, 'controls_grp')
+        tools.parent_rm(self.ik_ctrl.get_offset(), self.rig_module, 'controls_grp')
 
         ik_hdl_grp = pm.createNode("transform", n=self.prefix + 'HdlOffset_grp')
         self.ik_hdl = pm.ikHandle(n=self.prefix + 'Main_hdl', sol='ikSCsolver',
                                   sj=self.driven[0], ee=self.driven[-1])[0]
         pm.parent(self.ik_hdl, ik_hdl_grp)
         pm.parent(ik_hdl_grp, self.ik_ctrl.get_ctrl())
+        tools.matrix_constraint(self.ik_ctrl.get_ctrl(), self.driven[-1], mo=True, channels=['r'])
 
     def pole_vector(self, *args):
         # change main ik handle to RP solver
@@ -139,6 +140,7 @@ class IK:
 
         tools.matrix_constraint(self.pv_ctrl.get_ctrl(), self.pv_loc, mo=True)
         pm.poleVectorConstraint(self.pv_ctrl.get_ctrl(), self.ik_hdl)
+        tools.create_line(start=self.driven[tools.get_mid_joint(self.driven)], end=self.pv_ctrl.get_ctrl(), prefix="")
 
     def stretch(self, *args):
         if not self.pv_ctrl.get_ctrl():
@@ -152,7 +154,10 @@ class IK:
 
         def_joints = tools.joint_duplicate(joint_chain=[upper_joint, mid_joint, end_joint], joint_type='DEF')
 
-        # create stretch, soften, and pin attr to ik ctrl
+        # create IK options
+        pm.addAttr(self.ik_ctrl.get_ctrl(), longName='IKOptions', nn='IK OPTIONS',
+                   at="enum", en='=======')
+        pm.setAttr(self.ik_ctrl.get_ctrl() + '.IKOptions', e=True, channelBox=True)
         pm.addAttr(self.ik_ctrl.get_ctrl(), shortName='stretchP', longName='Stretch',
                    dv=0, min=0, max=1, at="float", k=1)
         pm.addAttr(self.ik_ctrl.get_ctrl(), shortName='softP', longName='SoftenIK',
@@ -236,8 +241,6 @@ class IK:
 
         pm.connectAttr(up_dist_mdl + '.output', mid_joint + '.tx')
         pm.connectAttr(lo_dist_mdl + '.output', end_joint + '.tx')
-
-
 
 
 class Spline:

@@ -2,6 +2,7 @@ import maya.cmds as mc
 from pymel import mayautils
 
 PORT = '7001'
+MATRIX_PLUGIN = "matrixNodes.mll"
 
 
 def load():
@@ -21,6 +22,10 @@ def load():
     print("\n###############################")
     print("#Journey Framework initialized#")
     print("###############################\n")
+
+    # load matrix nodes plugin
+    if not mc.pluginInfo(MATRIX_PLUGIN, query=True, loaded=True):
+        mc.loadPlugin(MATRIX_PLUGIN)
 
 
 if not mc.about(batch=True):

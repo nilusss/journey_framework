@@ -94,24 +94,33 @@ def matrix_constraint(driver, driven, mo=True, channels=['t', 'r', 's']):
         local_offset = pm.getAttr(local_off_matrix + '.matrixSum')
         pm.setAttr(mult_matrix + '.matrixIn[0]', local_offset, type='matrix')
         pm.connectAttr(driver + '.worldMatrix[0]', mult_matrix + '.matrixIn[1]')
-        if not driven_parent:
-            pm.connectAttr(driven + '.parentInverseMatrix[0]', mult_matrix + '.matrixIn[2]')
-        else:
-            pm.connectAttr(driven_parent[0] + '.worldInverseMatrix[0]', mult_matrix + '.matrixIn[2]')
+        pm.connectAttr(driven + '.parentInverseMatrix[0]', mult_matrix + '.matrixIn[2]')
+
+        # if not driven_parent:
+        #     pm.connectAttr(driven + '.parentInverseMatrix[0]', mult_matrix + '.matrixIn[2]')
+        # else:
+        #     pm.connectAttr(driven_parent[0] + '.worldInverseMatrix[0]', mult_matrix + '.matrixIn[2]')
     else:
         pm.connectAttr(driver + '.worldMatrix[0]', mult_matrix + '.matrixIn[0]')
         pm.connectAttr(driven + '.parentInverseMatrix[0]', mult_matrix + '.matrixIn[1]')
 
-    if pm.nodeType(driven) == 'joint':
-        pm.connectAttr(decompose_matrix + '.o' + channels[0], driven + '.' + channels[0])
-        try:
-            pm.connectAttr(decompose_matrix + '.o' + channels[2], driven + '.' + channels[2])
-        except:
-            pass
-        pm.connectAttr(q_te + '.outputRotate', driven + '.r')
-    else:
-        for m in channels:
+    for m in channels:
+        if m == 'r' and pm.nodeType(driven) == 'joint':
+            pm.connectAttr(q_te + '.outputRotate', driven + '.r')
+        else:
             pm.connectAttr(decompose_matrix + '.o' + m, driven + '.' + m)
+
+
+    # if pm.nodeType(driven) == 'joint':
+    #     pm.connectAttr(decompose_matrix + '.o' + channels[0], driven + '.' + channels[0])
+    #     try:
+    #         pm.connectAttr(decompose_matrix + '.o' + channels[2], driven + '.' + channels[2])
+    #     except:
+    #         pass
+    #     pm.connectAttr(q_te + '.outputRotate', driven + '.r')
+    # else:
+    #     for m in channels:
+    #         pm.connectAttr(decompose_matrix + '.o' + m, driven + '.' + m)
 
 
 def matrix_blend(driver1, driven, blender, driver2, channels=['t', 'r', 's']):
@@ -371,6 +380,7 @@ def insert_joints(start, end, amount, trans_first=False, parent=True, first=Fals
 
             pos += spacing
 
+    # parent inbetween joints to start or start and end joint
     pm.delete(inbt_list[-1])
     del inbt_list[-1]
     if first:
