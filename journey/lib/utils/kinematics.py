@@ -1,5 +1,5 @@
 """
-module containing different class kinematics for ik and fk.
+module containing different class kinematics for fk, ik, spline.
 """
 import pymel.core as pm
 import journey.lib.control as ctrl
@@ -143,16 +143,16 @@ class IK:
         tools.create_line(start=self.driven[tools.get_mid_joint(self.driven)], end=self.pv_ctrl.get_ctrl(), prefix="")
 
     def stretch(self, *args):
-        if not self.pv_ctrl.get_ctrl():
-            self.pole_vector()
         # define joints to stretch
-        def_joints = []
         mid_joint = tools.get_mid_joint(self.driven)
         upper_joint = self.driven[0]
         mid_joint = self.driven[mid_joint]
         end_joint = self.driven[-1]
 
         def_joints = tools.joint_duplicate(joint_chain=[upper_joint, mid_joint, end_joint], joint_type='DEF')
+
+        if not self.pv_ctrl.get_ctrl():
+            self.pole_vector()
 
         # create IK options
         pm.addAttr(self.ik_ctrl.get_ctrl(), longName='IKOptions', nn='IK OPTIONS',

@@ -6,10 +6,14 @@
       <w>ctrls</w>
       <w>darkblue</w>
       <w>darkred</w>
+      <w>decomp</w>
+      <w>drvn</w>
+      <w>drvr</w>
       <w>inbt</w>
       <w>mult</w>
       <w>proj</w>
       <w>psolver</w>
+      <w>quat</w>
       <w>reparent</w>
     </words>
   </dictionary>
