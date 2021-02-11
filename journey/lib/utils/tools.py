@@ -4,7 +4,6 @@ various tools for the framework
 
 import pymel.core as pm
 from pymel.all import mel
-#import maya.cmds as mc
 import maya.OpenMaya as om
 
 
@@ -119,7 +118,6 @@ def matrix_constraint(driver, driven, mo=True, channels=['t', 'r', 's']):
             pm.connectAttr(q_te + '.outputRotate', driven + '.r')
         else:
             pm.connectAttr(decompose_matrix + '.o' + m, driven + '.' + m)
-
 
     # if pm.nodeType(driven) == 'joint':
     #     pm.connectAttr(decompose_matrix + '.o' + channels[0], driven + '.' + channels[0])
