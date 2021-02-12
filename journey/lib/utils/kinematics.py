@@ -269,29 +269,29 @@ class Spline:
 
     def create(self, *args):
         # create bind joints for spline curve
-        start_bind_jnt = pm.duplicate(self.driven[0], parentOnly=True,
-                                      name=self.driven[0].replace('ik_jnt', 'IKBind_jnt'))[0]
-        end_bind_jnt = pm.duplicate(self.driven[-1], parentOnly=True,
-                                    name=self.driven[-1].replace('ik_jnt', 'IKBind_jnt'))[0]
+        self.start_bind_jnt = pm.duplicate(self.driven[0], parentOnly=True,
+                                           name=self.driven[0].replace('ik_jnt', 'IKBind_jnt'))[0]
+        self.end_bind_jnt = pm.duplicate(self.driven[-1], parentOnly=True,
+                                         name=self.driven[-1].replace('ik_jnt', 'IKBind_jnt'))[0]
 
-        pm.parent(end_bind_jnt, w=True)
+        pm.parent(self.end_bind_jnt, w=True)
 
         # create controllers for bind joints
-        start_bind_ctrl = ctrl.Control(prefix=start_bind_jnt.replace('_jnt', ''),
+        start_bind_ctrl = ctrl.Control(prefix=self.start_bind_jnt.replace('_jnt', ''),
                                        scale=self.scale,
-                                       trans_to=start_bind_jnt,
-                                       rot_to=start_bind_jnt,
+                                       trans_to=self.start_bind_jnt,
+                                       rot_to=self.start_bind_jnt,
                                        shape='rectangle')
         start_bind_ctrl.create()
-        start_bind_ctrl.set_constraint(start_bind_jnt)
+        start_bind_ctrl.set_constraint(self.start_bind_jnt)
 
-        end_bind_ctrl = ctrl.Control(prefix=end_bind_jnt.replace('_jnt', ''),
+        end_bind_ctrl = ctrl.Control(prefix=self.end_bind_jnt.replace('_jnt', ''),
                                      scale=self.scale,
-                                     trans_to=end_bind_jnt,
-                                     rot_to=end_bind_jnt,
+                                     trans_to=self.end_bind_jnt,
+                                     rot_to=self.end_bind_jnt,
                                      shape='rectangle')
         end_bind_ctrl.create()
-        end_bind_ctrl.set_constraint(end_bind_jnt)
+        end_bind_ctrl.set_constraint(self.end_bind_jnt)
 
         kwargs = {
             'name': self.prefix + '_hdl',
@@ -307,7 +307,7 @@ class Spline:
         # self.base_crv = pm.duplicate(self.spine_crv, n=self.spine_crv + '_base')
         # spine_crv_shape = pm.listRelatives(self.spine_crv, shapes=True)[0]
 
-        influences = [start_bind_jnt, end_bind_jnt]
+        influences = [self.start_bind_jnt, self.end_bind_jnt]
         kwargs = {
             'name': 'spine_skinCluster',
             'toSelectedBones': True,
@@ -317,6 +317,15 @@ class Spline:
             'maximumInfluences': 2
         }
         scls = pm.skinCluster(influences, self.spine_crv, **kwargs)[0]
+
+    def twist(self, *args):
+        # setup twisting for the ik spline
+        pm.setAttr(self.ik_spline + '.dTwistControlEnable', 1)
+        pm.setAttr(self.ik_spline + '.dWorldUpType', 4)
+        pm.connectAttr(self.start_bind_jnt + '.worldMatrix[0]', self.ik_spline + '.dWorldUpMatrix')
+        pm.connectAttr(self.end_bind_jnt + '.worldMatrix[0]', self.ik_spline + '.dWorldUpMatrixEnd')
+        pm.setAttr(self.ik_spline + '.dWorldUpAxis', 0)
+        pm.setAttr(self.ik_spline + '.dForwardAxis', 0)
 
     def stretch(self, *args):
         # create curveInfo node to get arclength
