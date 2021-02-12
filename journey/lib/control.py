@@ -125,6 +125,9 @@ class Control:
 
         self.set_channels(self.channels)
 
+    def set_constraint(self, driven, mo=True, channels=['t', 'r', 's']):
+        tools.matrix_constraint(self.get_ctrl(), driven, mo=mo, channels=channels)
+
     def get_ctrl(self, *args):
         return self.ctrl_object
 

@@ -11,8 +11,7 @@ reload(tools)
 
 
 class Base:
-    """
-    class for building top rig structure
+    """class for building top rig structure
     """
 
     def __init__(self,
@@ -34,6 +33,8 @@ class Base:
         self.global_ctrl_scale = global_ctrl_scale
 
     def create(self, *args):
+        """Create method for base class
+        """
         # create initial rig structure groups
         self.top_grp = pm.group(name=self.char_name + '_rig_grp', em=1)
         self.rig_grp = pm.group(name='rig_grp', em=1, p=self.top_grp)
@@ -60,14 +61,14 @@ class Base:
                                         scale=self.scale * self.global_ctrl_scale,
                                         parent=self.rig_grp,
                                         shape='master',
-                                        lock_channels=['v'])
+                                        channels=['v'])
         self.global_ctrl.create()
 
         self.offset_ctrl = ctrl.Control(prefix='offset',
                                         scale=self.scale * self.global_ctrl_scale - 2,
                                         parent=self.rig_grp,
                                         shape='offset',
-                                        lock_channels=['s', 'v'])
+                                        channels=['s', 'v'])
         self.offset_ctrl.create()
 
         tools.matrix_constraint(self.global_ctrl.get_ctrl(), self.offset_ctrl.get_offset())

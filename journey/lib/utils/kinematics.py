@@ -87,6 +87,7 @@ class IK:
                  channels=['s', 'v'],
                  rig_module=None,
                  ):
+
         self.prefix = prefix
         self.scale = scale
         self.driven = driven
@@ -244,8 +245,111 @@ class IK:
 
 
 class Spline:
-    def __init__(self, *args):
-        pass
+    def __init__(self,
+                 prefix='new',
+                 scale=1.0,
+                 driven='',
+                 preserve_vol=True,
+                 rot_to=True,
+                 parent=True,
+                 shape='circle',
+                 channels=['s', 'v'],
+                 rig_module=None,
+                 ):
 
-    def make_stretchy(self, *args):
-        pass
+        self.prefix = prefix
+        self.scale = scale
+        self.driven = driven
+        self.preserve_vol = preserve_vol
+        self.rot_to = rot_to
+        self.parent = parent
+        self.shape = shape
+        self.channels = channels
+        self.rig_module = rig_module
+
+    def create(self, *args):
+        # create bind joints for spline curve
+        start_bind_jnt = pm.duplicate(self.driven[0], parentOnly=True,
+                                      name=self.driven[0].replace('ik_jnt', 'IKBind_jnt'))[0]
+        end_bind_jnt = pm.duplicate(self.driven[-1], parentOnly=True,
+                                    name=self.driven[-1].replace('ik_jnt', 'IKBind_jnt'))[0]
+
+        pm.parent(end_bind_jnt, w=True)
+
+        # create controllers for bind joints
+        start_bind_ctrl = ctrl.Control(prefix=start_bind_jnt.replace('_jnt', ''),
+                                       scale=self.scale,
+                                       trans_to=start_bind_jnt,
+                                       rot_to=start_bind_jnt,
+                                       shape='rectangle')
+        start_bind_ctrl.create()
+        start_bind_ctrl.set_constraint(start_bind_jnt)
+
+        end_bind_ctrl = ctrl.Control(prefix=end_bind_jnt.replace('_jnt', ''),
+                                     scale=self.scale,
+                                     trans_to=end_bind_jnt,
+                                     rot_to=end_bind_jnt,
+                                     shape='rectangle')
+        end_bind_ctrl.create()
+        end_bind_ctrl.set_constraint(end_bind_jnt)
+
+        kwargs = {
+            'name': self.prefix + '_hdl',
+            'startJoint': self.driven[0],
+            'endEffector': self.driven[-1],
+            'solver': 'ikSplineSolver',
+            'createCurve': True,
+            'parentCurve': False,
+            'simplifyCurve': False
+        }
+        self.ik_spline, eff, self.spine_crv = pm.ikHandle(**kwargs)
+        self.spine_crv = pm.rename(self.spine_crv, self.prefix + '_crv')
+        # self.base_crv = pm.duplicate(self.spine_crv, n=self.spine_crv + '_base')
+        # spine_crv_shape = pm.listRelatives(self.spine_crv, shapes=True)[0]
+
+        influences = [start_bind_jnt, end_bind_jnt]
+        kwargs = {
+            'name': 'spine_skinCluster',
+            'toSelectedBones': True,
+            'bindMethod': 0,
+            'skinMethod': 0,
+            'normalizeWeights': 1,
+            'maximumInfluences': 2
+        }
+        scls = pm.skinCluster(influences, self.spine_crv, **kwargs)[0]
+
+    def stretch(self, *args):
+        # create curveInfo node to get arclength
+        curve_info = pm.arclen(self.spine_crv, constructionHistory=1)
+        curve_info = pm.rename(curve_info, self.spine_crv + '_info')
+
+        # stretch
+        # create division node
+        arclen_div = pm.createNode('multiplyDivide', name=curve_info.replace('_info', '_arclen_md'))
+        arclen_div.attr('operation').set(2)
+
+        # divide curve's current arclength by base arclength,
+        # to get a multiplier for bone length
+        pm.connectAttr(curve_info + '.arcLength', arclen_div + '.input1X')
+        base_arclen = pm.getAttr(arclen_div + '.input1X')
+        arclen_div.attr('input2X').set(base_arclen)
+        #pm.setAttr(arclen_div + '.input2X', base_arclen)
+
+        # squash
+        power_div = None
+        if self.preserve_vol:
+            # create power node
+            power_div = pm.createNode('multiplyDivide', name=curve_info.replace('_info', '_power_md'))
+            power_div.attr('operation').set(3)
+
+            # raise multiplier by power -1/2 (volume preservation)
+            pm.connectAttr(arclen_div + '.outputX', power_div + '.input1X')
+            power_div.attr('input2X').set(-0.5)
+
+        # scale each bone's length by the raised multiplier
+        for joint in self.driven:
+            pm.connectAttr(arclen_div + '.outputX', joint + '.scaleX')
+
+            if self.preserve_vol:
+                pm.connectAttr(power_div + '.outputX', joint + '.scaleY')
+                pm.connectAttr(power_div + '.outputX', joint + '.scaleZ')
