@@ -131,7 +131,7 @@ def matrix_constraint(driver, driven, mo=True, channels=['t', 'r', 's']):
     #         pm.connectAttr(decompose_matrix + '.o' + m, driven + '.' + m)
 
 
-def matrix_blend(driver1, driven, blender, driver2, channels=['t', 'r', 's']):
+def matrix_blend(driver1, driven, blender, driver2, mo=False, blend_value=0.0, channels=['t', 'r', 's']):
     """Create a matrix blend constraint
 
     Args:
@@ -139,6 +139,7 @@ def matrix_blend(driver1, driven, blender, driver2, channels=['t', 'r', 's']):
         driven: list(str), object to be driven by driver1 and driver2
         blender: str, object to be used as the blender controller
         driver2: list(str), second object to drive the driven
+        mo: bool, whether the driven object to maintain offset compared to driver
         channels: list(str), attributes to be driven
 
     """
@@ -146,42 +147,73 @@ def matrix_blend(driver1, driven, blender, driver2, channels=['t', 'r', 's']):
     driver1 = list_check(driver1)
     driver2 = list_check(driver2)
     driven = list_check(driven)
+    try:
+        pm.getAttr(blender + '.blend')
+    except pm.MayaAttributeError:
+        pm.addAttr(blender, shortName='blend', longName='FKIKBlend',
+                   defaultValue=blend_value, minValue=0.0, maxValue=1.0, k=1)
 
-    for drvr1, drvn, drvr2 in zip(driver1, driven, driver2):
-        q_p = pm.createNode("quatProd", n=drvn + '_quatProd')
-        q_i = pm.createNode("quatInvert", n=drvn + '_quatInvert')
-        e_tq = pm.createNode("eulerToQuat", n=drvn + '_eulerToQuat')
-        q_te = pm.createNode("quatToEuler", n=drvn + '_quatToEuler')
-        ik_mult = pm.createNode("multMatrix", n=drvr2 + '_multMatrix')
-        fk_mult = pm.createNode("multMatrix", n=drvr1 + '_multMatrix')
-        blend_matrix = pm.createNode("wtAddMatrix", n=drvn + '_wtAddMatrix')
-        blend_mult = pm.createNode("multMatrix", n=drvn + '_multMatrix')
-        blend_decomp = pm.createNode("decomposeMatrix", n=drvn + '_decomposeMatrix')
-        reverse = pm.createNode("reverse", n=drvn + '_reverse')
+    # for driver1, driven, driver2 in zip(driver1, driven, driver2):
+    # print driver1, driven, driver2
+    ik_mult = pm.createNode("multMatrix", n=driver2 + '_multMatrix')
+    fk_mult = pm.createNode("multMatrix", n=driver1 + '_multMatrix')
+    blend_matrix = pm.createNode("wtAddMatrix", n=driven + '_wtAddMatrix')
+    blend_mult = pm.createNode("multMatrix", n=driven + '_multMatrix')
+    blend_decomp = pm.createNode("decomposeMatrix", n=driven + '_decomposeMatrix')
+    reverse = pm.createNode("reverse", n=driven + '_reverse')
 
-        pm.connectAttr(drvr2 + '.worldMatrix', ik_mult + '.matrixIn[1]')
-        pm.connectAttr(drvr1 + '.worldMatrix', fk_mult + '.matrixIn[1]')
+    if mo is True:
+        driver1_lo_matrix = pm.createNode('multMatrix', n=driver1 + 'localOffset_multMatrix')
+        driver2_lo_matrix = pm.createNode('multMatrix', n=driver1 + 'localOffset_multMatrix')
+        pm.connectAttr(driven + '.worldMatrix[0]', driver1_lo_matrix + '.matrixIn[0]')
+        pm.connectAttr(driven + '.worldMatrix[0]', driver2_lo_matrix + '.matrixIn[0]')
+        pm.connectAttr(driver1 + '.worldInverseMatrix[0]', driver1_lo_matrix + '.matrixIn[1]')
+        pm.connectAttr(driver2 + '.worldInverseMatrix[0]', driver2_lo_matrix + '.matrixIn[1]')
+        driver1_lo = pm.getAttr(driver1_lo_matrix + '.matrixSum')
+        driver2_lo = pm.getAttr(driver2_lo_matrix + '.matrixSum')
+        pm.setAttr(ik_mult + '.matrixIn[0]', driver1_lo, type='matrix')
+        pm.setAttr(fk_mult + '.matrixIn[0]', driver2_lo, type='matrix')
+        pm.connectAttr(driver1 + '.worldMatrix[0]', ik_mult + '.matrixIn[1]')
+        pm.connectAttr(driver2 + '.worldMatrix[0]', fk_mult + '.matrixIn[1]')
+        pm.connectAttr(driven + '.parentInverseMatrix[0]', ik_mult + '.matrixIn[2]')
+        pm.connectAttr(driven + '.parentInverseMatrix[0]', fk_mult + '.matrixIn[2]')
 
-        pm.connectAttr(ik_mult + '.matrixSum', blend_matrix + '.wtMatrix[0].matrixIn')
-        pm.connectAttr(fk_mult + '.matrixSum', blend_matrix + '.wtMatrix[1].matrixIn')
+    else:
+        pm.connectAttr(driver2 + '.worldMatrix', ik_mult + '.matrixIn[1]')
+        pm.connectAttr(driver1 + '.worldMatrix', fk_mult + '.matrixIn[1]')
 
-        pm.connectAttr(blend_matrix + '.matrixSum', blend_mult + '.matrixIn[0]')
-        pm.connectAttr(drvn + '.parentInverseMatrix[0]', blend_mult + '.matrixIn[1]')
-        pm.connectAttr(blend_mult + '.matrixSum', blend_decomp + '.inputMatrix')
+    pm.connectAttr(ik_mult + '.matrixSum', blend_matrix + '.wtMatrix[0].matrixIn')
+    pm.connectAttr(fk_mult + '.matrixSum', blend_matrix + '.wtMatrix[1].matrixIn')
 
+    pm.connectAttr(blend_matrix + '.matrixSum', blend_mult + '.matrixIn[0]')
+    pm.connectAttr(driven + '.parentInverseMatrix[0]', blend_mult + '.matrixIn[1]')
+    pm.connectAttr(blend_mult + '.matrixSum', blend_decomp + '.inputMatrix')
+
+
+
+    if pm.nodeType(driven) == 'joint':
+        q_p = pm.createNode("quatProd", n=driven + '_quatProd')
+        q_i = pm.createNode("quatInvert", n=driven + '_quatInvert')
+        e_tq = pm.createNode("eulerToQuat", n=driven + '_eulerToQuat')
+        q_te = pm.createNode("quatToEuler", n=driven + '_quatToEuler')
         pm.connectAttr(blend_decomp + '.outputQuat', q_p + '.input1Quat')
-        pm.connectAttr(drvn + '.jointOrient', e_tq + '.inputRotate')
+        pm.connectAttr(driven + '.jointOrient', e_tq + '.inputRotate')
         pm.connectAttr(e_tq + '.outputQuat', q_i + '.inputQuat')
         pm.connectAttr(q_i + '.outputQuat', q_p + '.input2Quat')
         pm.connectAttr(q_p + '.outputQuat', q_te + '.inputQuat')
 
-        pm.connectAttr(blender + '.blend', blend_matrix + '.wtMatrix[0].weightIn')
-        pm.connectAttr(blender + '.blend', reverse + '.inputX')
-        pm.connectAttr(reverse + '.outputX', blend_matrix + '.wtMatrix[1].weightIn')
+    pm.connectAttr(blender + '.blend', blend_matrix + '.wtMatrix[0].weightIn')
+    pm.connectAttr(blender + '.blend', reverse + '.inputX')
+    pm.connectAttr(reverse + '.outputX', blend_matrix + '.wtMatrix[1].weightIn')
 
-        pm.connectAttr(q_te + '.outputRotate', drvn + '.r')
-        pm.connectAttr(blend_decomp + '.outputTranslate', drvn + '.t')
-        pm.connectAttr(blend_decomp + '.outputScale', drvn + '.s')
+    for m in channels:
+        if m == 'r' and pm.nodeType(driven) == 'joint':
+            pm.connectAttr(q_te + '.outputRotate', driven + '.r')
+        else:
+            pm.connectAttr(blend_decomp + '.o' + m, driven + '.' + m)
+    # pm.connectAttr(q_te + '.outputRotate', driven + '.r')
+    # pm.connectAttr(blend_decomp + '.outputTranslate', driven + '.t')
+    # pm.connectAttr(blend_decomp + '.outputScale', driven + '.s')
 
 
 def joint_duplicate(joint_chain, joint_type, offset_grp='', skip=0):
@@ -375,6 +407,55 @@ def joint_constraint(driver1, driven, blender='', driver2='', channels=['t', 'r'
         for i, drive in enumerate(driven):
             for c in channels:
                 pm.connectAttr(driver1[i] + '.' + c, drive + '.' + c)
+
+
+def joint_on_curve(curve, prefix='new', parent=False, radius=0.5):
+    curve_cvs = pm.ls(curve + '.cv[:]', fl=True)
+    # pm.delete(curve_cvs[1])
+    # pm.delete(curve_cvs[-2])
+    joint_list = []
+    for i, cv in enumerate(curve_cvs):
+        x, y, z = pm.pointPosition(cv)
+        j = pm.joint(n='{}{}_result_jnt'.format(prefix, i+1), radius=radius)
+        pm.parent(j, world=True)
+        pm.move(j, x, y, z, pm.ls(sl=True))
+        joint_list.append(j)
+
+    return joint_list
+
+    # amount = float(amount)
+    # spacing = pm.getAttr(curve + '.spans') / float(amount + 1)
+    # joint_list = []
+    #
+    # pos = spacing
+    #
+    # for i in range(int(amount + 1)):
+    #     if i != 0 or amount:
+    #         li = i
+    #         # create motion path curve
+    #         m_curve = pm.duplicate(curve, rr=True)[0]
+    #         # duplicate start joint to get same attributes on all the joints
+    #         curve_joint = pm.joint()
+    #         pm.parent(curve_joint, world=True)
+    #         joint_list.append(curve_joint)
+    #
+    #         # append the joint to the motion path and move it down the curve
+    #         m_path = pm.pathAnimation(curve_joint, su=pos, curve=m_curve, follow=False)
+    #         u_value = pm.listConnections(curve_joint, type='motionPath')[0] + '.u'
+    #
+    #         # breaking the connection with mel
+    #         mel.eval("source channelBoxCommand; CBdeleteConnection \"%s\"" % u_value)
+    #         # delete motion path and curve
+    #         pm.delete(u_value, m_curve)
+    #
+    #         # freeze transforms and reparent the joints
+    #         pm.makeIdentity(joint_list, apply=True)
+    #         if li > 0 and parent:
+    #             pm.parent(joint_list[li], joint_list[li - 1])
+    #
+    #         pos += spacing
+    #
+    # return joint_list, spacing
 
 
 def insert_joints(start, end, amount, trans_first=False, first=False, both=False):

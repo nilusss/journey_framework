@@ -9,14 +9,20 @@
       <w>darkblue</w>
       <w>darkred</w>
       <w>decomp</w>
+      <w>deformer</w>
       <w>drvn</w>
       <w>drvr</w>
+      <w>highres</w>
+      <w>inbetween</w>
       <w>inbt</w>
+      <w>lowres</w>
       <w>mult</w>
+      <w>npoc</w>
       <w>proj</w>
       <w>psolver</w>
       <w>quat</w>
       <w>reparent</w>
+      <w>untick</w>
     </words>
   </dictionary>
 </component>

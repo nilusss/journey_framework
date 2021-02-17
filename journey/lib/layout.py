@@ -114,6 +114,21 @@ class Module:
         pm.hide(self.parts_grp, self.static_grp, self.joints_grp)
         pm.setAttr(self.static_grp + '.it', 0, l=1)
 
+        body_attach_grp = pm.group(n=self.prefix + '_bodyAttach_grp', em=1, p=self.parts_grp)
+        base_attach_grp = pm.group(n=self.prefix + '_baseAttach_grp', em=1, p=self.parts_grp)
+
         # parent module
         if self.base_rig:
             pm.parent(self.top_grp, self.base_rig.modules_grp)
+
+    def set_base(self, base_rig):
+        self.base_rig = base_rig
+        pm.parent(self.top_grp, self.base_rig.modules_grp)
+
+    def set_prefix(self, new_prefix):
+        sel = pm.ls(self.prefix + '*')
+
+        for s in sel:
+            pm.rename(s, s.replace(self.prefix, new_prefix))
+
+        self.prefix = new_prefix

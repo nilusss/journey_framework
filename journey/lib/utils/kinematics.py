@@ -22,7 +22,7 @@ class FK:
                  rot_to=True,
                  parent=True,
                  shape='circle',
-                 channels=['s', 'v'],
+                 channels=['t', 's', 'v'],
                  rig_module=None,
                  ):
 
@@ -245,6 +245,9 @@ class IK:
 
 
 class Spline:
+    """
+    TODO: fix squash to squash gradually instead of same value for entire chain.
+    """
     def __init__(self,
                  prefix='new',
                  scale=1.0,
@@ -345,6 +348,7 @@ class Spline:
         #pm.setAttr(arclen_div + '.input2X', base_arclen)
 
         # squash
+        # adds squash to the entire chain
         power_div = None
         if self.preserve_vol:
             # create power node
