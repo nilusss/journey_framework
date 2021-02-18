@@ -2,11 +2,7 @@
 library for creating shapes
 """
 import pymel.core as pm
-
-
-def convert_scale(scale):
-    if type(scale) is int or float:
-        return [scale, scale, scale]
+from journey.lib.utils.tools import convert_scale
 
 
 def circle(scale, name=''):
@@ -47,7 +43,7 @@ def circleZ(scale, name=''):
 
 def diamond(scale, name=''):
     shape1 = pm.circle(name=name, constructionHistory=False,
-                       normal=[1, 0, 0], degree=3,
+                       normal=[1, 0, 0], degree=1,
                        sections=4, radius=scale)[0]
     pm.select(clear=True)
 
@@ -56,7 +52,7 @@ def diamond(scale, name=''):
 
 def diamondX(scale, name=''):
     shape1 = pm.circle(name=name, constructionHistory=False,
-                       normal=[1, 0, 0], degree=3,
+                       normal=[1, 0, 0], degree=1,
                        sections=4, radius=scale)[0]
     pm.select(clear=True)
 
@@ -65,7 +61,7 @@ def diamondX(scale, name=''):
 
 def diamondY(scale, name=''):
     shape1 = pm.circle(name=name, constructionHistory=False,
-                       normal=[0, 1, 0], degree=3,
+                       normal=[0, 1, 0], degree=1,
                        sections=4, radius=scale)[0]
     pm.select(clear=True)
 
@@ -74,7 +70,7 @@ def diamondY(scale, name=''):
 
 def diamondZ(scale, name=''):
     shape1 = pm.circle(name=name, constructionHistory=False,
-                       normal=[0, 0, 1], degree=3,
+                       normal=[0, 0, 1], degree=1,
                        sections=4, radius=scale)[0]
     pm.select(clear=True)
 
@@ -139,6 +135,21 @@ def rectangle(scale, name=''):
     pm.select(clear=True)
 
     return rectangle1
+
+
+def arrow3D(scale, name=''):
+    scale = convert_scale(scale)
+    arrow1 = pm.curve(name=name, d=True,
+                      p=[(0, 0, -1.75), (0.75, 0, -0.75), (0.4, 0, -0.75),
+                         (0.4, 0, 0), (-0.4, 0, 0), (-0.4, 0, -0.75),
+                         (-0.75, 0, -0.75), (0, 0, -1.75), (0, -0.75, -0.75),
+                         (0, -0.4, -0.75), (-0, -0.4, 0), (0, 0.4, 0),
+                         (0, 0.4, -0.75), (0, 0.75, -0.75), (0, 0, -1.75)])
+
+    pm.scale(arrow1, scale[0], scale[1], scale[2])
+    pm.makeIdentity(arrow1, apply=True, s=1, n=0, pn=1)
+
+    return arrow1
 
 
 def master(scale, name=''):

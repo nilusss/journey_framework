@@ -12,6 +12,7 @@ reload(tools)
 
 class Base:
     """class for building top rig structure
+    TODO: automatically look for object in scene created with class - see if it's and instance
     """
 
     def __init__(self,
@@ -114,8 +115,8 @@ class Module:
         pm.hide(self.parts_grp, self.static_grp, self.joints_grp)
         pm.setAttr(self.static_grp + '.it', 0, l=1)
 
-        body_attach_grp = pm.group(n=self.prefix + '_bodyAttach_grp', em=1, p=self.parts_grp)
-        base_attach_grp = pm.group(n=self.prefix + '_baseAttach_grp', em=1, p=self.parts_grp)
+        self.body_attach_grp = pm.group(n=self.prefix + '_bodyAttach_grp', em=1, p=self.parts_grp)
+        self.base_attach_grp = pm.group(n=self.prefix + '_baseAttach_grp', em=1, p=self.parts_grp)
 
         # parent module
         if self.base_rig:

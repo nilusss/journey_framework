@@ -23,6 +23,11 @@ def list_check(check):
     return check
 
 
+def convert_scale(scale):
+    if type(scale) is int or float:
+        return [scale, scale, scale]
+
+
 def parent_rm(child, module, module_grp):
     """Used to check if parenting objects to a specific rig module group is possible
 
@@ -68,6 +73,37 @@ def lock_channels(obj, channels=['t', 'r', 's'], t_axis=['x', 'y', 'z'], r_axis=
         pm.setAttr(obj + '.' + attr, l=1, k=0)
 
     return single_attr_lock_list
+
+
+def unlock_channels(obj, channels=['t', 'r', 's'], t_axis=['x', 'y', 'z'], r_axis=['x', 'y', 'z'], s_axis=['x', 'y', 'z']):
+    """Unocks objects specified channel
+
+    Args:
+        obj: str, node to have it's channels unlocked
+        channels: list(str), main channels to unlock
+        t_axis: list(str), translate axises to unlock
+        r_axis: list(str), rotate axises to unlock
+        s_axis: list(str), scale axises to unlock
+
+    Returns:
+        list, of all attributes that has been unlocked
+
+    """
+    # unlock control channels
+    single_attr_unlock_list = []
+
+    for ch in channels:
+        if ch in ['t', 'r', 's']:
+            exec('return_axis = {}_axis'.format(ch))
+            for axis in return_axis:
+                attr = ch + axis
+                single_attr_unlock_list.append(attr)
+        else:
+            single_attr_unlock_list.append(ch)
+    for attr in single_attr_unlock_list:
+        pm.setAttr(obj + '.' + attr, l=0, k=0)
+
+    return single_attr_unlock_list
 
 
 def matrix_constraint(driver, driven, mo=True, channels=['t', 'r', 's']):

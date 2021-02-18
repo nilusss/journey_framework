@@ -1,6 +1,7 @@
 <component name="ProjectDictionaryState">
   <dictionary name="nilas">
     <words>
+      <w>affector</w>
       <w>arclen</w>
       <w>arclength</w>
       <w>bdelete</w>
@@ -10,6 +11,7 @@
       <w>darkred</w>
       <w>decomp</w>
       <w>deformer</w>
+      <w>deformerbase</w>
       <w>drvn</w>
       <w>drvr</w>
       <w>highres</w>
@@ -18,6 +20,7 @@
       <w>lowres</w>
       <w>mult</w>
       <w>npoc</w>
+      <w>outliner</w>
       <w>proj</w>
       <w>psolver</w>
       <w>quat</w>

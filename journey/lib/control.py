@@ -51,9 +51,19 @@ class Control:
         self.channels = channels
 
     def set_shape(self, shape):
-        # exec("return_shape = shapes.{0}({1}, {2})".format(self.shape, self.scale, self.prefix + '_ctrl'))
-        exec("return_shape = shapes.{0}(self.scale, self.prefix + '_ctrl')".format(self.shape))
-        self.ctrl_object = return_shape
+        if self.get_ctrl():
+            exec ("return_shape = shapes.{0}(self.scale, self.prefix + '1_ctrl')".format(shape))
+            pm.delete(pm.parentConstraint(self.get_ctrl(), return_shape))
+            for shape in pm.PyNode(return_shape).getShapes():
+                pm.parent(shape, self.get_ctrl(), s=True, r=True)
+            for shape in pm.PyNode(return_shape).getShapes():
+                pm.parent(shape, self.get_ctrl(), s=True, r=True)
+            pm.delete(return_shape)
+            self.set_color()
+        else:
+            # exec("return_shape = shapes.{0}({1}, {2})".format(self.shape, self.scale, self.prefix + '_ctrl'))
+            exec("return_shape = shapes.{0}(self.scale, self.prefix + '_ctrl')".format(shape))
+            self.ctrl_object = return_shape
 
         return self.ctrl_object
 
@@ -124,6 +134,23 @@ class Control:
         self.set_rotation()
 
         self.set_channels(self.channels)
+
+    def set_pivot(self, node):
+        get_piv = pm.xform(node, piv=True, q=True, ws=True)
+        pm.xform(self.get_ctrl(), ws=True, piv=(get_piv[0], get_piv[1], get_piv[2]))
+        pm.xform(self.get_offset(), ws=True, piv=(get_piv[0], get_piv[1], get_piv[2]))
+
+    def set_scale(self, scale):
+        scale = tools.convert_scale(scale)
+        pm.scale(self.get_offset(), scale[0], scale[1], scale[2])
+        try:
+            pm.makeIdentity(self.get_offset(), apply=True, s=1)
+        except RuntimeError:
+            tools.unlock_channels(self.get_offset(), channels=['s'])
+            tools.unlock_channels(self.get_ctrl(), channels=['s'])
+            pm.makeIdentity(self.get_offset(), apply=True, s=1)
+            tools.lock_channels(self.get_offset(), channels=['s'])
+            tools.lock_channels(self.get_ctrl(), channels=['s'])
 
     def set_constraint(self, driven, mo=True, channels=['t', 'r', 's']):
         tools.matrix_constraint(self.get_ctrl(), driven, mo=mo, channels=channels)
