@@ -101,7 +101,7 @@ def unlock_channels(obj, channels=['t', 'r', 's'], t_axis=['x', 'y', 'z'], r_axi
         else:
             single_attr_unlock_list.append(ch)
     for attr in single_attr_unlock_list:
-        pm.setAttr(obj + '.' + attr, l=0, k=0)
+        pm.setAttr(obj + '.' + attr, l=0, k=1)
 
     return single_attr_unlock_list
 
@@ -176,13 +176,14 @@ def matrix_blend(driver1, driven, blender, driver2, mo=False, blend_value=0.0, c
         blender: str, object to be used as the blender controller
         driver2: list(str), second object to drive the driven
         mo: bool, whether the driven object to maintain offset compared to driver
+        blend_value: float
         channels: list(str), attributes to be driven
 
     """
 
-    driver1 = list_check(driver1)
-    driver2 = list_check(driver2)
-    driven = list_check(driven)
+    # driver1 = list_check(driver1)
+    # driver2 = list_check(driver2)
+    # driven = list_check(driven)
     try:
         pm.getAttr(blender + '.blend')
     except pm.MayaAttributeError:
@@ -224,8 +225,6 @@ def matrix_blend(driver1, driven, blender, driver2, mo=False, blend_value=0.0, c
     pm.connectAttr(blend_matrix + '.matrixSum', blend_mult + '.matrixIn[0]')
     pm.connectAttr(driven + '.parentInverseMatrix[0]', blend_mult + '.matrixIn[1]')
     pm.connectAttr(blend_mult + '.matrixSum', blend_decomp + '.inputMatrix')
-
-
 
     if pm.nodeType(driven) == 'joint':
         q_p = pm.createNode("quatProd", n=driven + '_quatProd')

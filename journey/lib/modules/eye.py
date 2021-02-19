@@ -27,6 +27,7 @@ class Eye(Module):
         self.scale = scale
         self.base_rig = base_rig
 
+        # init Module class
         Module.__init__(self, self.prefix, self.base_rig)
 
     def create(self, *args):

@@ -109,7 +109,7 @@ def cube(scale, name=''):
                      k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
                         12, 13, 14, 15, 16, 17, 18])
 
-    pm.scale(cube1, scale[0], scale[1], scale[2])
+    pm.scale(cube1, scale[0], scale[1], scale[2], absolute=True)
     pm.makeIdentity(cube1, apply=True, s=1)
     pm.select(clear=True)
 
@@ -130,7 +130,7 @@ def rectangle(scale, name=''):
                              (-0.7, -0.3, 0.5), (-0.7, 0.3, 0.5),
                              (-0.7, 0.3, -0.5)])
 
-    pm.scale(rectangle1, scale[0], scale[1], scale[2])
+    pm.scale(rectangle1, scale[0], scale[1], scale[2], absolute=True)
     pm.makeIdentity(rectangle1, apply=True, s=1)
     pm.select(clear=True)
 
@@ -146,7 +146,7 @@ def arrow3D(scale, name=''):
                          (0, -0.4, -0.75), (-0, -0.4, 0), (0, 0.4, 0),
                          (0, 0.4, -0.75), (0, 0.75, -0.75), (0, 0, -1.75)])
 
-    pm.scale(arrow1, scale[0], scale[1], scale[2])
+    pm.scale(arrow1, scale[0], scale[1], scale[2], absolute=True)
     pm.makeIdentity(arrow1, apply=True, s=1, n=0, pn=1)
 
     return arrow1
@@ -190,10 +190,10 @@ def master(scale, name=''):
         pm.parent(shape.getShape(), master1, s=True, r=True)
         pm.delete(shape)
 
-    pm.scale(master1, 0.1, 0.1, 0.1)
+    pm.scale(master1, 0.1, 0.1, 0.1, absolute=True)
     pm.makeIdentity(master1, apply=True, s=1, n=0, pn=1)
 
-    pm.scale(master1, scale[0], scale[1], scale[2])
+    pm.scale(master1, scale[0], scale[1], scale[2], absolute=True)
     pm.makeIdentity(master1, apply=True, s=1, n=0, pn=1)
     pm.select(clear=True)
 
@@ -208,7 +208,7 @@ def settings(scale, name=''):
                             (1, 0, -1), (1, 0, 0), (0, 0, 0),
                             (0, 0, 1)])
 
-    pm.scale(settings1, scale, scale, scale)
+    pm.scale(settings1, scale, scale, scale, absolute=True)
     pm.xform(settings1, cp=True)
     pm.move(settings1, rpr=True)
     pm.makeIdentity(settings1, apply=True, s=1, t=1)
@@ -230,9 +230,9 @@ def offset(scale, name=''):
                           (-3.382219, 0, 4.655227), (-4.655226, 0, 3.382221),
                           (-5.472546, 0, 1.778139)])
 
-    pm.scale(offset1, 0.1, 0.1, 0.1)
+    pm.scale(offset1, 0.1, 0.1, 0.1, absolute=True)
     pm.makeIdentity(offset1, apply=True, s=1)
-    pm.scale(offset1, scale[0], scale[1], scale[2])
+    pm.scale(offset1, scale[0], scale[1], scale[2], absolute=True)
     pm.makeIdentity(offset1, apply=True, s=1)
     pm.select(clear=True)
 
@@ -269,9 +269,9 @@ def fancy_sphere(scale, name=''):
                                 (2.27, 0, -2.27), (3.21, 0, 0), (2.27, 0, 2.27),
                                 (0, 0, 3.21)])
 
-    pm.scale(fancy_sphere1, 0.25, 0.25, 0.25)
+    pm.scale(fancy_sphere1, 0.25, 0.25, 0.25, absolute=True)
     pm.makeIdentity(fancy_sphere1, apply=True, s=1)
-    pm.scale(fancy_sphere1, scale, scale, scale)
+    pm.scale(fancy_sphere1, scale, scale, scale, absolute=True)
     pm.makeIdentity(fancy_sphere1, apply=True, s=1)
     pm.select(clear=True)
 

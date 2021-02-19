@@ -52,10 +52,11 @@ class Control:
 
     def set_shape(self, shape):
         if self.get_ctrl():
+            self.scale
             exec ("return_shape = shapes.{0}(self.scale, self.prefix + '1_ctrl')".format(shape))
             pm.delete(pm.parentConstraint(self.get_ctrl(), return_shape))
-            for shape in pm.PyNode(return_shape).getShapes():
-                pm.parent(shape, self.get_ctrl(), s=True, r=True)
+            for shape in pm.PyNode(self.get_ctrl()).getShapes():
+                pm.delete(shape)
             for shape in pm.PyNode(return_shape).getShapes():
                 pm.parent(shape, self.get_ctrl(), s=True, r=True)
             pm.delete(return_shape)
@@ -67,8 +68,8 @@ class Control:
 
         return self.ctrl_object
 
-    def get_shape(self):
-        pass
+    def get_shapes(self):
+        return pm.PyNode(self.get_ctrl()).getShapes()
 
     def set_parent(self):
         pass
@@ -140,17 +141,20 @@ class Control:
         pm.xform(self.get_ctrl(), ws=True, piv=(get_piv[0], get_piv[1], get_piv[2]))
         pm.xform(self.get_offset(), ws=True, piv=(get_piv[0], get_piv[1], get_piv[2]))
 
-    def set_scale(self, scale):
+    def set_shape_scale(self, scale):
         scale = tools.convert_scale(scale)
-        pm.scale(self.get_offset(), scale[0], scale[1], scale[2])
-        try:
-            pm.makeIdentity(self.get_offset(), apply=True, s=1)
-        except RuntimeError:
-            tools.unlock_channels(self.get_offset(), channels=['s'])
-            tools.unlock_channels(self.get_ctrl(), channels=['s'])
-            pm.makeIdentity(self.get_offset(), apply=True, s=1)
-            tools.lock_channels(self.get_offset(), channels=['s'])
-            tools.lock_channels(self.get_ctrl(), channels=['s'])
+        print scale
+        for shape in self.get_shapes():
+            pm.scale(pm.select(shape + '.cv[:]'), scale[0], scale[1], scale[2], absolute=True)
+        # try:
+        #     tools.unlock_channels(self.get_offset(), channels=['s'])
+        #     tools.unlock_channels(self.get_ctrl(), channels=['s'])
+        #     pm.makeIdentity(self.get_offset(), apply=True, s=1)
+        #     pm.DeleteHistory()
+        #     tools.lock_channels(self.get_offset(), channels=['s'])
+        #     tools.lock_channels(self.get_ctrl(), channels=['s'])
+        # except RuntimeError as e:
+        #     print str(e)
 
     def set_constraint(self, driven, mo=True, channels=['t', 'r', 's']):
         tools.matrix_constraint(self.get_ctrl(), driven, mo=mo, channels=channels)

@@ -32,13 +32,15 @@ class Eyelid(Module):
         self.prefix = prefix
         self.scale = scale
         self.base_rig = base_rig
-        Module.__init__(self, self.prefix, self.base_rig)
 
         # init empty public variables
         self.main_controllers = []
         self.constrain_controllers = []
         self.helper_groups = []
         self.lid_affector = ''
+
+        # init Module class
+        Module.__init__(self, self.prefix, self.base_rig)
 
     def create(self, *args):
         # create module from parent class
@@ -108,6 +110,20 @@ class Eyelid(Module):
         c_lower, c_joint_lower = self.create_control_joints(lower_lowres_curve, lower=True)
         pm.skinCluster(c_joint_lower, c_joint_upper[0], c_joint_upper[-1], lower_lowres_curve, toSelectedBones=True)
 
+        # constrain the inbetween helper groups to the 4 main controllers
+        # on the edges and top and top bottom of the eye
+        # print self.constrain_controllers
+        # print self.helper_groups
+        # print self.main_controllers
+        tools.matrix_blend(self.constrain_controllers[0], self.helper_groups[0],
+                           self.main_controllers[0].get_ctrl(), self.constrain_controllers[1], mo=True, blend_value=0.5)
+        tools.matrix_blend(self.constrain_controllers[1], self.helper_groups[1],
+                           self.main_controllers[0].get_ctrl(), self.constrain_controllers[2], mo=True)
+        tools.matrix_blend(self.constrain_controllers[0], self.helper_groups[2],
+                           self.main_controllers[0].get_ctrl(), self.constrain_controllers[3], mo=True)
+        tools.matrix_blend(self.constrain_controllers[3], self.helper_groups[3],
+                           self.main_controllers[0].get_ctrl(), self.constrain_controllers[2], mo=True)
+
         # parent controllers to control group
         for c in c_upper + c_lower:
             pm.parent(c.get_offset(), self.controls_grp)
@@ -121,17 +137,6 @@ class Eyelid(Module):
         pm.delete(pm.pointConstraint(self.eye_joint, self.main_offset))
         pm.parent(self.main_offset, self.controls_grp)
         pm.parent(self.main_controllers[0].get_offset(), self.main_controllers[1].get_offset(), self.main_offset)
-
-        # constrain the inbetween helper groups to the 4 main controllers
-        # on the edges and top and top bottom of the eye
-        tools.matrix_blend(self.constrain_controllers[0], self.helper_groups[0],
-                           self.main_controllers[0].get_ctrl(), self.constrain_controllers[1], mo=True, blend_value=0.5)
-        tools.matrix_blend(self.constrain_controllers[1], self.helper_groups[1],
-                           self.main_controllers[0].get_ctrl(), self.constrain_controllers[2], mo=True)
-        tools.matrix_blend(self.constrain_controllers[0], self.helper_groups[2],
-                           self.main_controllers[0].get_ctrl(), self.constrain_controllers[3], mo=True)
-        tools.matrix_blend(self.constrain_controllers[3], self.helper_groups[3],
-                           self.main_controllers[0].get_ctrl(), self.constrain_controllers[2], mo=True)
 
         # add blink and blink height attr
         for i, controller in enumerate(self.main_controllers):
@@ -200,31 +205,49 @@ class Eyelid(Module):
 
         for i, cv in enumerate(curve.getCVs()):
             # TODO: fix if statement. works for now, but is super ugly.
-            if lower is True and (i == 0 or i == 4):
-                pass
-            else:
-                jnt = pm.joint(name='{}_cv{}_jnt'.format(curve.replace('_crv', ''), i+1),
-                               position=cv, radius=self.joint_radius)
-                pm.parent(jnt, world=True)
-                control_joints.append(jnt)
-                controller = ctrl.Control(prefix=curve.replace('_lowres_crv', '{}_lowres'.format(i+1)),
-                                          scale=self.scale * 0.5,
-                                          trans_to=jnt,
-                                          shape='circleZ',
-                                          channels=['r', 's', 'v'])
-                controller.create()
+            jnt = pm.joint(name='{}_cv{}_jnt'.format(curve.replace('_crv', ''), i+1),
+                           position=cv, radius=self.joint_radius)
+            pm.parent(jnt, world=True)
+            control_joints.append(jnt)
+            controller = ctrl.Control(prefix=curve.replace('_lowres_crv', '{}_lowres'.format(i+1)),
+                                      scale=self.scale * 0.3,
+                                      trans_to=jnt,
+                                      shape='sphere',
+                                      channels=['r', 's', 'v'])
+            controller.create()
 
-                if i == 2:
-                    self.main_controllers.append(controller)
-                if i == 0 or i == 2 or i == 4:
+            if i == 2:
+                controller.set_shape('circleZ')
+                controller.set_shape_scale(self.scale * 1.3)
+                self.main_controllers.append(controller)
+                self.constrain_controllers.append(controller.get_ctrl())
+            if i == 0 or i == 4:
+                if lower is False:
                     self.constrain_controllers.append(controller.get_ctrl())
-                if i == 1 or i == 3:
-                    controller.set_shape('sphere')
-                    controller.set_scale(self.scale * 0.7)
-                    self.helper_groups.append(controller.get_offset())
+            if i == 1 or i == 3:
+                self.helper_groups.append(controller.get_offset())
 
-                controller.set_constraint(jnt)
-                controllers.append(controller)
+            controllers.append(controller)
+
+        # position eyelid controllers
+        pm.delete(pm.pointConstraint(controllers[0].get_ctrl(), controllers[2].get_ctrl(),
+                                     controllers[1].get_offset(), skip=['x', 'y']))
+        pm.delete(pm.pointConstraint(controllers[2].get_ctrl(), controllers[4].get_ctrl(),
+                                     controllers[3].get_offset(), skip=['x', 'y']))
+
+        pm.delete(pm.pointConstraint(controllers[0].get_offset(), controllers[1].get_offset(),
+                                     controllers[0].get_ctrl(), skip=['x', 'y']))
+        pm.delete(pm.pointConstraint(controllers[4].get_offset(), controllers[3].get_ctrl(),
+                                     controllers[4].get_ctrl(), skip=['x', 'y']))
+
+        if lower is True:
+            pm.delete(controllers[0].get_offset(), controllers[-1].get_offset(), control_joints[0], control_joints[-1])
+            del (controllers[0], controllers[-1], control_joints[0], control_joints[-1])
+
+        # setup controller constraints
+        for j, c in zip(control_joints, controllers):
+            c.set_constraint(j)
+            #c.set_pivot(j)
 
         return controllers, control_joints
 
