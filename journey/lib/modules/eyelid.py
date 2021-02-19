@@ -15,7 +15,7 @@ reload(ctrl)
 reload(tools)
 
 
-class Eyelid():
+class Eyelid(Module):
     def __init__(self,
                  upper_crv='',
                  lower_crv='',
@@ -25,21 +25,25 @@ class Eyelid():
                  scale=1.0,
                  base_rig=None,
                  ):
-
         self.upper_crv = upper_crv
         self.lower_crv = lower_crv
         self.eye_joint = eye_joint
         self.joint_radius = joint_radius
         self.prefix = prefix
         self.scale = scale
-        self.rig_module = Module(self.prefix, base_rig)
+        self.base_rig = base_rig
+        Module.__init__(self, self.prefix, self.base_rig)
+
+        # init empty public variables
         self.main_controllers = []
         self.constrain_controllers = []
         self.helper_groups = []
         self.lid_affector = ''
 
     def create(self, *args):
-        self.rig_module.create()
+        # create module from parent class
+        Module.create_structure(self)
+
         upper_joints = tools.joint_on_curve(self.upper_crv, prefix=self.prefix+'Upper',
                                             parent=False, radius=self.joint_radius)
         lower_joints = tools.joint_on_curve(self.lower_crv, prefix=self.prefix+'Lower',
@@ -79,10 +83,10 @@ class Eyelid():
 
                 # parent stuff
                 pm.parent(joint, center_joint)
-                pm.parent(center_joint, self.rig_module.joints_grp)
+                pm.parent(center_joint, self.joints_grp)
                 pm.parent(aim_loc, loc_grp)
 
-        pm.parent(loc_grp, self.rig_module.parts_grp)
+        pm.parent(loc_grp, self.parts_grp)
 
         # connect the locators to the high res curve
         self.loc_on_curve(aim_loc_upper_list, self.upper_crv)
@@ -106,16 +110,16 @@ class Eyelid():
 
         # parent controllers to control group
         for c in c_upper + c_lower:
-            pm.parent(c.get_offset(), self.rig_module.controls_grp)
+            pm.parent(c.get_offset(), self.controls_grp)
 
         cv_jnt_grp = pm.createNode('transform', n=self.prefix + 'cv_jnt_grp')
-        pm.parent(cv_jnt_grp, self.rig_module.joints_grp)
+        pm.parent(cv_jnt_grp, self.joints_grp)
         for j in c_joint_upper + c_joint_lower:
             pm.parent(j, cv_jnt_grp)
 
         self.main_offset = pm.createNode('transform', n=self.prefix + '_main_controllers_offset_grp')
         pm.delete(pm.pointConstraint(self.eye_joint, self.main_offset))
-        pm.parent(self.main_offset, self.rig_module.controls_grp)
+        pm.parent(self.main_offset, self.controls_grp)
         pm.parent(self.main_controllers[0].get_offset(), self.main_controllers[1].get_offset(), self.main_offset)
 
         # constrain the inbetween helper groups to the 4 main controllers
@@ -180,7 +184,7 @@ class Eyelid():
 
         # parent curves to rig module parts group
         pm.parent(self.lower_crv, self.upper_crv, blink_curve_upper, blink_curve_lower,
-                  blink_height_crv, upper_lowres_curve, lower_lowres_curve, self.rig_module.parts_grp)
+                  blink_height_crv, upper_lowres_curve, lower_lowres_curve, self.parts_grp)
 
         # parent wires
         wire1base = pm.listConnections(wire1 + '.baseWire', s=True, d=False)
@@ -188,7 +192,7 @@ class Eyelid():
         up_blink_wire_deformerbase = pm.listConnections(up_blink_wire_deformer + '.baseWire', s=True, d=False)
         low_blink_wire_deformerbase = pm.listConnections(low_blink_wire_deformer + '.baseWire', s=True, d=False)
         pm.parent(wire1base, wire2base, up_blink_wire_deformerbase,
-                  low_blink_wire_deformerbase, self.rig_module.parts_grp)
+                  low_blink_wire_deformerbase, self.parts_grp)
 
     def create_control_joints(self, curve, lower=False):
         control_joints = []
@@ -264,7 +268,7 @@ class Eyelid():
                 pm.connectAttr(al_clamp + '.output', self.main_offset + '.rotate')
 
                 # parent and constrain for clean outliner
-                pm.parent(rotate_helper, self.rig_module.parts_grp)
+                pm.parent(rotate_helper, self.parts_grp)
                 tools.matrix_constraint(affector, rotate_helper, mo=True)
 
                  # set lid affector
@@ -278,7 +282,7 @@ class Eyelid():
         return self.lid_affector
 
     def set_attach_parent(self, driver):
-        tools.matrix_constraint(driver, self.rig_module.body_attach_grp)
+        tools.matrix_constraint(driver, self.body_attach_grp)
 
     @staticmethod
     def create_lowres_crv(highres_curve):

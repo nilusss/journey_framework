@@ -98,11 +98,10 @@ class Module:
                  prefix='new',
                  base_rig=None
                  ):
-
         self.prefix = prefix
         self.base_rig = base_rig
 
-    def create(self, *args):
+    def create_structure(self, *args):
         # create initial rig structure groups
         self.top_grp = pm.group(name=self.prefix + '_module_grp', em=1)
         self.controls_grp = pm.group(name=self.prefix + '_controls_grp', em=1, p=self.top_grp)
@@ -119,12 +118,14 @@ class Module:
         self.base_attach_grp = pm.group(n=self.prefix + '_baseAttach_grp', em=1, p=self.parts_grp)
 
         # parent module
+        self.set_base(self.base_rig)
         if self.base_rig:
             pm.parent(self.top_grp, self.base_rig.modules_grp)
 
     def set_base(self, base_rig):
         self.base_rig = base_rig
-        pm.parent(self.top_grp, self.base_rig.modules_grp)
+        if self.base_rig:
+            pm.parent(self.top_grp, self.base_rig.modules_grp)
 
     def set_prefix(self, new_prefix):
         sel = pm.ls(self.prefix + '*')

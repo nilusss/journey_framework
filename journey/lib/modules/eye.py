@@ -11,10 +11,7 @@ reload(ctrl)
 reload(tools)
 
 
-class Eye():
-    """
-
-    """
+class Eye(Module):
     def __init__(self,
                  eye_center='',
                  eye_end='',
@@ -23,22 +20,24 @@ class Eye():
                  scale=1.0,
                  base_rig=None,
                  ):
-
         self.eye_center = eye_center
         self.eye_end = eye_end
         self.look_at = look_at
         self.prefix = prefix
         self.scale = scale
-        self.rig_module = Module(self.prefix, base_rig)
+        self.base_rig = base_rig
+
+        Module.__init__(self, self.prefix, self.base_rig)
 
     def create(self, *args):
-        self.rig_module.create()
+        # create module from parent class
+        Module.create_structure(self)
 
         eye_center_ctrl = ctrl.Control(prefix=self.prefix + '_rot',
                                        scale=self.scale,
                                        trans_to=self.eye_end,
                                        shape='arrow3D',
-                                       parent=self.rig_module.controls_grp,
+                                       parent=self.controls_grp,
                                        channels=['t', 's', 'v'])
         eye_center_ctrl.create()
         eye_center_ctrl.set_pivot(self.eye_center)
@@ -48,7 +47,7 @@ class Eye():
                                     scale=self.scale,
                                     trans_to=self.look_at,
                                     shape='circleZ',
-                                    parent=self.rig_module.controls_grp,
+                                    parent=self.controls_grp,
                                     channels=['r', 's', 'v'])
 
         look_at_ctrl.create()
