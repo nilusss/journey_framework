@@ -6,13 +6,17 @@ https://vimeo.com/66583205
 
 NOTE: inherit set_base and set_prefix from Module class
 NOTE: When creating upper and lower curves untick: Conform to smooth mesh preview and set to 1 linear
+
+TODO: update create function so it works with being deserialized
 """
+import journey
 import pymel.core as pm
 import journey.lib.control as ctrl
 import journey.lib.utils.tools as tools
 from journey.lib.layout import Module
 reload(ctrl)
 reload(tools)
+reload(journey.lib.layout)
 
 
 class Eyelid(Module):
@@ -25,6 +29,9 @@ class Eyelid(Module):
                  scale=1.0,
                  base_rig=None,
                  ):
+
+        self.CLASS_NAME = self.__class__.__name__
+
         self.upper_crv = upper_crv
         self.lower_crv = lower_crv
         self.eye_joint = eye_joint
@@ -39,10 +46,19 @@ class Eyelid(Module):
         self.helper_groups = []
         self.lid_affector = ''
 
+
         # init Module class
         Module.__init__(self, self.prefix, self.base_rig)
 
+    def __json__(self):
+        return self.__dict__
+
     def create(self, *args):
+        # init empty public variables
+        self.main_controllers = []
+        self.constrain_controllers = []
+        self.helper_groups = []
+        self.lid_affector = ''
         # create module from parent class
         Module.create_structure(self)
 
@@ -294,7 +310,7 @@ class Eyelid(Module):
                 pm.parent(rotate_helper, self.parts_grp)
                 tools.matrix_constraint(affector, rotate_helper, mo=True)
 
-                 # set lid affector
+                # set lid affector
                 self.lid_affector = affector
             else:
                 # affector can currently only be set once - when initializing the class

@@ -1,5 +1,7 @@
 """
 module for making curve controls
+
+TODO: update imports for cleaner look
 """
 
 import pymel.core as pm

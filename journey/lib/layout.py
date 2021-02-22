@@ -1,13 +1,17 @@
 """
 module for making top rig structure and rig module structure
+
+TODO: update imports for cleaner look
 """
 import os
 import pymel.core as pm
 import journey.lib.control as ctrl
 import journey.lib.utils.tools as tools
 from journey.env import JF_VERSION, JF_AUTHOR, JF_NAME
+import journey.lib.serialization as s
 reload(ctrl)
 reload(tools)
+reload(s)
 
 
 class Base:
@@ -89,7 +93,7 @@ class Base:
         pm.setAttr(self.extra_grp + '.it', 0, lock=1)
 
 
-class Module:
+class Module(s.Serialize):
     """
     class for building rig module structure
     """
