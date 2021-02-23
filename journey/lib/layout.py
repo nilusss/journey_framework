@@ -5,13 +5,10 @@ TODO: update imports for cleaner look
 """
 import os
 import pymel.core as pm
-import journey.lib.control as ctrl
+import journey as jn
 import journey.lib.utils.tools as tools
 from journey.env import JF_VERSION, JF_AUTHOR, JF_NAME
-import journey.lib.serialization as s
-reload(ctrl)
 reload(tools)
-reload(s)
 
 
 class Base:
@@ -62,18 +59,18 @@ class Base:
             pm.setAttr(self.top_grp + '.' + attr_name, edit=True, channelBox=True)
 
         # make global control and offset control
-        self.global_ctrl = ctrl.Control(prefix='master',
-                                        scale=self.scale * self.global_ctrl_scale,
-                                        parent=self.rig_grp,
-                                        shape='master',
-                                        channels=['v'])
+        self.global_ctrl = jn.Control(prefix='master',
+                                      scale=self.scale * self.global_ctrl_scale,
+                                      parent=self.rig_grp,
+                                      shape='master',
+                                      channels=['v'])
         self.global_ctrl.create()
 
-        self.offset_ctrl = ctrl.Control(prefix='offset',
-                                        scale=self.scale * self.global_ctrl_scale - 2,
-                                        parent=self.rig_grp,
-                                        shape='offset',
-                                        channels=['s', 'v'])
+        self.offset_ctrl = jn.Control(prefix='offset',
+                                      scale=self.scale * self.global_ctrl_scale - 2,
+                                      parent=self.rig_grp,
+                                      shape='offset',
+                                      channels=['s', 'v'])
         self.offset_ctrl.create()
 
         tools.matrix_constraint(self.global_ctrl.get_ctrl(), self.offset_ctrl.get_offset())
@@ -93,7 +90,7 @@ class Base:
         pm.setAttr(self.extra_grp + '.it', 0, lock=1)
 
 
-class Module(s.Serialize):
+class Module(jn.Serialize):
     """
     class for building rig module structure
     """

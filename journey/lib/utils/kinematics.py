@@ -2,9 +2,8 @@
 module containing different class kinematics for fk, ik, spline.
 """
 import pymel.core as pm
-import journey.lib.control as ctrl
+import journey as jn
 import journey.lib.utils.tools as tools
-reload(ctrl)
 reload(tools)
 
 
@@ -41,7 +40,7 @@ class FK:
         self.driven = tools.list_check(self.driven)
 
         for i, joint in enumerate(self.driven):
-            fk_ctrl = ctrl.Control(prefix=self.prefix,
+            fk_ctrl = jn.Control(prefix=self.prefix,
                                    scale=self.scale,
                                    trans_to=joint,
                                    rot_to=joint,
@@ -102,7 +101,7 @@ class IK:
         self.pv_loc = ''
 
     def create(self, *args):
-        self.ik_ctrl = ctrl.Control(prefix=self.prefix + 'IK', trans_to=self.driven[-1],
+        self.ik_ctrl = jn.Control(prefix=self.prefix + 'IK', trans_to=self.driven[-1],
                                     rot_to=self.driven[-1], scale=self.scale, shape='cube')
         self.ik_ctrl.create()
         tools.parent_rm(self.ik_ctrl.get_offset(), self.rig_module, 'controls_grp')
@@ -127,7 +126,7 @@ class IK:
         pm.delete(temp_hdl)
 
         # create pv ctrl and pv constraint
-        self.pv_ctrl = ctrl.Control(prefix=self.prefix + 'PoleVec', scale=self.scale,
+        self.pv_ctrl = jn.Control(prefix=self.prefix + 'PoleVec', scale=self.scale,
                                     shape='fancy_sphere', channels=['r', 's', 'v'])
         self.pv_ctrl.create()
         tools.parent_rm(self.pv_ctrl, self.rig_module, 'controls_grp')
@@ -280,7 +279,7 @@ class Spline:
         pm.parent(self.end_bind_jnt, w=True)
 
         # create controllers for bind joints
-        start_bind_ctrl = ctrl.Control(prefix=self.start_bind_jnt.replace('_jnt', ''),
+        start_bind_ctrl = jn.Control(prefix=self.start_bind_jnt.replace('_jnt', ''),
                                        scale=self.scale,
                                        trans_to=self.start_bind_jnt,
                                        rot_to=self.start_bind_jnt,
@@ -288,7 +287,7 @@ class Spline:
         start_bind_ctrl.create()
         start_bind_ctrl.set_constraint(self.start_bind_jnt)
 
-        end_bind_ctrl = ctrl.Control(prefix=self.end_bind_jnt.replace('_jnt', ''),
+        end_bind_ctrl = jn.Control(prefix=self.end_bind_jnt.replace('_jnt', ''),
                                      scale=self.scale,
                                      trans_to=self.end_bind_jnt,
                                      rot_to=self.end_bind_jnt,

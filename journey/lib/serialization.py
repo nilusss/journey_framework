@@ -9,13 +9,13 @@ TODO: update imports for cleaner look
 """
 
 import json
-import journey
-from journey.lib.modules.eyelid import Eyelid
 
 
 def decode(o):
+    import journey.lib.modules as mo
     if o.get('CLASS_NAME'):
-        exec ("return_class = {}()".format(o.get('CLASS_NAME')))
+        module = str(o.get('CLASS_NAME')).lower()
+        exec ("return_class = mo.{}.{}()".format(module, o.get('CLASS_NAME')))
         a = return_class
         a.__dict__.update((k, v) for k, v in o.iteritems())
         return (a)
@@ -28,9 +28,10 @@ def deserialize(serialized_object):
 
 class Encoder(json.JSONEncoder):
     def default(self, obj):
+        import journey.lib.control as ctrl
         if "pymel.core.nodetypes." in str(type(obj)):
             return obj.name()
-        if isinstance(obj, journey.lib.control.Control):
+        if isinstance(obj, ctrl.Control):
             return obj.__dict__
             # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)

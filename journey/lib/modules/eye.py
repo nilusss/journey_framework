@@ -20,6 +20,9 @@ class Eye(Module):
                  scale=1.0,
                  base_rig=None,
                  ):
+
+        self.CLASS_NAME = self.__class__.__name__
+
         self.eye_center = eye_center
         self.eye_end = eye_end
         self.look_at = look_at
