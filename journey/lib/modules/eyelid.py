@@ -50,7 +50,7 @@ class Eyelid(lo.Module):
         # Module.__init__(self, self.prefix, self.base_rig)
 
         # init Module class
-        super(Eyelid, self).__init__(self.prefix, self.base_rig)
+        #super(Eyelid, self).__init__(self.prefix, self.base_rig)
 
     def __json__(self):
         return self.__dict__

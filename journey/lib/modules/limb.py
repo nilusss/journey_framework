@@ -39,7 +39,7 @@ class Limb(lo.Module):
         # init empty public variables
 
         # init Module class
-        super(Limb, self).__init__(self.prefix, self.base_rig)
+        #super(Limb, self).__init__(self.prefix, self.base_rig)
         print("init limb")
 
     def create(self, *args):

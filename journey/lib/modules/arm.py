@@ -21,7 +21,7 @@ class Arm(li.Limb):
                  scale=1.0,
                  base_rig=None,
                  ):
-        super(Arm, self).__init__(driven, stretch, joint_radius, prefix, scale, base_rig)
+        #super(Arm, self).__init__(driven, stretch, joint_radius, prefix, scale, base_rig)
         print("init arm")
 
     def create(self):

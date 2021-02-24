@@ -36,7 +36,7 @@ class Eye(lo.Module):
         print type(self)
         # import pdb; pdb.set_trace()
         # super(Eye, self).__init__(self.prefix, self.base_rig)
-        super(Eye, self).__init__(self.prefix, self.base_rig)
+        #super(Eye, self).__init__(self.prefix, self.base_rig)
 
     def create(self, *args):
         # create module from parent class
