@@ -13,18 +13,10 @@ import journey
 import pymel.core as pm
 import journey.lib.control as ctrl
 import journey.lib.utils.tools as tools
-<<<<<<< Updated upstream
 from journey.lib.layout import Module
 reload(ctrl)
 reload(tools)
 reload(journey.lib.layout)
-=======
-import journey.lib.layout as lo
-reload(ctrl)
-reload(tools)
-reload(lo)
-import journey.lib.layout as lo
->>>>>>> Stashed changes
 
 
 class Eyelid(Module):
