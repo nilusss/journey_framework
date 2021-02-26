@@ -9,17 +9,25 @@ NOTE: When creating upper and lower curves untick: Conform to smooth mesh previe
 
 TODO: update create function so it works with being deserialized
 """
+import journey
 import pymel.core as pm
 import journey.lib.control as ctrl
 import journey.lib.utils.tools as tools
+<<<<<<< Updated upstream
+from journey.lib.layout import Module
+reload(ctrl)
+reload(tools)
+reload(journey.lib.layout)
+=======
 import journey.lib.layout as lo
-# reload(ctrl)
-# reload(tools)
-# reload(lo)
+reload(ctrl)
+reload(tools)
+reload(lo)
 import journey.lib.layout as lo
+>>>>>>> Stashed changes
 
 
-class Eyelid(lo.Module):
+class Eyelid(Module):
     def __init__(self,
                  upper_crv='',
                  lower_crv='',
@@ -46,11 +54,9 @@ class Eyelid(lo.Module):
         self.helper_groups = []
         self.lid_affector = ''
 
-        # # init Module class
-        # Module.__init__(self, self.prefix, self.base_rig)
 
         # init Module class
-        #super(Eyelid, self).__init__(self.prefix, self.base_rig)
+        Module.__init__(self, self.prefix, self.base_rig)
 
     def __json__(self):
         return self.__dict__
@@ -61,10 +67,8 @@ class Eyelid(lo.Module):
         self.constrain_controllers = []
         self.helper_groups = []
         self.lid_affector = ''
-        # # create module from parent class
-        # Module.create_structure(self)
         # create module from parent class
-        super(Eyelid, self).create_structure()
+        Module.create_structure(self)
 
         upper_joints = tools.joint_on_curve(self.upper_crv, prefix=self.prefix+'Upper',
                                             parent=False, radius=self.joint_radius)
@@ -294,8 +298,7 @@ class Eyelid(lo.Module):
                            defaultValue=5, minValue=0.0, maxValue=100, k=1)
                 pm.addAttr(self.main_controllers[0].get_ctrl(), shortName='aldlr', longName='AutoLidDragLeftRight',
                            defaultValue=10, minValue=0.0, maxValue=100, k=1)
-                mySphere = pm.sphere()
-                pm.getAttr(mySphere + '.tx')
+
                 # connect attrs - check node editor for better visuals. Select 1 main and 1 corner lid controller
                 pm.connectAttr(self.main_controllers[0].get_ctrl() + '.aldud', al_clamp + '.maxR')
                 pm.connectAttr(self.main_controllers[0].get_ctrl() + '.aldlr', al_clamp + '.maxG')

@@ -43,8 +43,8 @@ def parent_rm(child, module, module_grp):
 
     """
     try:
-        #exec('return_module = {}.{}'.format(module.prefix, module_grp))
-        pm.parent(child, '{}_{}'.format(module.prefix, module_grp))
+        exec('return_module = {}.{}'.format(module, module_grp))
+        pm.parent(child, return_module)
     except AttributeError as e:
         print("No rig module to parent under: \"{}\" ".format(str(e)))
 
@@ -81,7 +81,7 @@ def lock_channels(obj, channels=['t', 'r', 's'], t_axis=['x', 'y', 'z'], r_axis=
 
 
 def unlock_channels(obj, channels=['t', 'r', 's'], t_axis=['x', 'y', 'z'], r_axis=['x', 'y', 'z'], s_axis=['x', 'y', 'z']):
-    """Unlocks objects specified channel
+    """Unocks objects specified channel
 
     Args:
         obj: str, node to have it's channels unlocked
@@ -156,8 +156,6 @@ def matrix_constraint(driver, driven, mo=True, channels=['t', 'r', 's']):
         channels: list(str), attributes to constrain
 
     """
-    driver = pm.PyNode(driver)
-    driven = pm.PyNode(driven)
     mult_matrix = pm.createNode('multMatrix', n=driven + '_multMatrix')
     decompose_matrix = pm.createNode('decomposeMatrix', n=driven + '_decomposeMatrix')
     pm.connectAttr(mult_matrix + '.matrixSum', decompose_matrix + '.inputMatrix', force=True)
@@ -386,7 +384,8 @@ def create_line(start, end, prefix="new"):
     offset_grp.attr('inheritsTransform').set(0)
     pm.parent(crv, offset_grp)
 
-    return offset_grp, crv
+    return {'crv': crv,
+            'grp': offset_grp}
 
 
 def create_loc(pos):
