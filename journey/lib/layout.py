@@ -3,20 +3,15 @@ module for making top rig structure and rig module structure
 
 TODO: update imports for cleaner look
 """
-import os
 import pymel.core as pm
-import journey as jn
+import journey.lib.control as ctrl
 import journey.lib.utils.tools as tools
 from journey.env import JF_VERSION, JF_AUTHOR, JF_NAME
-<<<<<<< Updated upstream
-reload(tools)
-=======
 import journey.lib.serialization as se
-reload(ctrl)
-reload(tools)
-reload(se)
+# reload(ctrl)
+# reload(tools)
+# reload(se)
 import journey.lib.serialization as se
->>>>>>> Stashed changes
 
 
 class Base:
@@ -67,18 +62,18 @@ class Base:
             pm.setAttr(self.top_grp + '.' + attr_name, edit=True, channelBox=True)
 
         # make global control and offset control
-        self.global_ctrl = jn.Control(prefix='master',
-                                      scale=self.scale * self.global_ctrl_scale,
-                                      parent=self.rig_grp,
-                                      shape='master',
-                                      channels=['v'])
+        self.global_ctrl = ctrl.Control(prefix='master',
+                                        scale=self.scale * self.global_ctrl_scale,
+                                        parent=self.rig_grp,
+                                        shape='master',
+                                        channels=['v'])
         self.global_ctrl.create()
 
-        self.offset_ctrl = jn.Control(prefix='offset',
-                                      scale=self.scale * self.global_ctrl_scale - 2,
-                                      parent=self.rig_grp,
-                                      shape='offset',
-                                      channels=['s', 'v'])
+        self.offset_ctrl = ctrl.Control(prefix='offset',
+                                        scale=self.scale * self.global_ctrl_scale - 2,
+                                        parent=self.rig_grp,
+                                        shape='offset',
+                                        channels=['s', 'v'])
         self.offset_ctrl.create()
 
         tools.matrix_constraint(self.global_ctrl.get_ctrl(), self.offset_ctrl.get_offset())
@@ -98,31 +93,21 @@ class Base:
         pm.setAttr(self.extra_grp + '.it', 0, lock=1)
 
 
-class Module(jn.Serialize):
+class Module(se.Serialize):
     """
     class for building rig module structure
     """
 
-    all_names_list = []
-    all_instances_list = []
-
     def __init__(self,
                  prefix='new',
-                 base_rig=None
+                 base_rig=None,
                  ):
-<<<<<<< Updated upstream
-=======
         super(Module, self).__init__()
-        self.all_names_list = all_names_list
-        self.all_instances_list = all_instances_list
->>>>>>> Stashed changes
         self.prefix = prefix
         self.base_rig = base_rig
+        print("init module")
 
     def create_structure(self, *args):
-        print self.prefix
-        if pm.ls(self.prefix +'_*'):
-            pm.error("Module already exists with prefix: " + self.prefix)
         # create initial rig structure groups
         self.top_grp = pm.group(name=self.prefix + '_module_grp', em=1)
         self.controls_grp = pm.group(name=self.prefix + '_controls_grp', em=1, p=self.top_grp)
@@ -130,6 +115,9 @@ class Module(jn.Serialize):
         self.parts_grp = pm.group(name=self.prefix + '_parts_grp', em=1, p=self.top_grp)
         self.static_grp = pm.group(name=self.prefix + '_static_grp', em=1, p=self.top_grp)
         # self.info_grp = pm.group(name=prefix + '_info_grp', em=1, p=self.topGrp)
+
+        self.joints_offset_grp = pm.createNode('transform', n=self.prefix + 'joints_offset_grp')
+        pm.parent(self.joints_offset_grp, self.joints_grp)
 
         # hide module groups and make static group
         pm.hide(self.parts_grp, self.static_grp, self.joints_grp)
@@ -155,17 +143,6 @@ class Module(jn.Serialize):
             pm.rename(s, s.replace(self.prefix, new_prefix))
 
         self.prefix = new_prefix
-<<<<<<< Updated upstream
-=======
 
     def get_instance(self):
         return self
-
-    def get_all_module_names(self):
-        self.all_names_list.append(self.prefix)
-        return self.all_names_list
-
-    def get_all_module_instances(self):
-        self.all_instances_list.append(self)
-        return self.all_instances_list
->>>>>>> Stashed changes
