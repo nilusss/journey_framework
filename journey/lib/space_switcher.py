@@ -32,8 +32,18 @@ class SpaceSwitcherLogic(object):
         self.base_rig = base_rig
 
     def setup_switcher(self, *args):
+        world_space = pm.ls("WORLD_SPACE_NODE")
+        if not world_space:
+            world_space = pm.createNode('transform', n="WORLD_SPACE_NODE")
+            try:
+                # exec('return_module = {}.{}'.format(module.prefix, module_grp))
+                pm.parent(world_space, self.base_rig.rig_grp)
+            except AttributeError as e:
+                print("No rig to parent under: \"{}\" ".format(str(e)))
+
+
         # If the driver follows my naming convention split it at the second underscore
-        drivers_nicename = ''.join('%s:' % tools.split_at(driver, '_', 2) for driver in self.drivers)
+        drivers_nicename = 'World:'.join('%s:' % tools.split_at(driver, '_', 2) for driver in self.drivers)
         # setup switching attr on driven ctrl
         try:
             pm.getAttr(self.driven + '.pspace')
@@ -48,12 +58,13 @@ class SpaceSwitcherLogic(object):
         # create two choice nodes for the driver matrix and offset matrix
         self.space_offset_choice = pm.createNode('choice', n=self.prefix + '_space_offset_choice')
         self.space_choice = pm.createNode('choice', n=self.prefix + '_space_choice')
+
         #create multmatrix and decomposematrix to get the position of selected space
         space_mm = pm.createNode('multMatrix', n=self.prefix + '_space_mm')
         space_dm = pm.createNode('decomposeMatrix', n=self.prefix + '_space_dm')
 
         # setup initial connections between nodes
-        for driver in self.drivers:
+        for driver in world_space.name().split() + self.drivers:
             local_offset = tools.get_local_offset(driver, self.driven)
             idx = tools.get_next_free_multi_index(self.space_choice + '.input', 0)
             offset_matrix = pm.createNode('multMatrix', n=self.prefix + driver +'_offset_matrix')
