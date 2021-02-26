@@ -28,6 +28,11 @@ def convert_scale(scale):
         return [scale, scale, scale]
 
 
+def split_at(s, c, n):
+    words = s.split(c)
+    return c.join(words[:n])
+
+
 def parent_rm(child, module, module_grp):
     """Used to check if parenting objects to a specific rig module group is possible
 
@@ -104,6 +109,41 @@ def unlock_channels(obj, channels=['t', 'r', 's'], t_axis=['x', 'y', 'z'], r_axi
         pm.setAttr(obj + '.' + attr, l=0, k=1)
 
     return single_attr_unlock_list
+
+
+# python wrapper of the mel command getNextFreeMultiIndex
+def get_next_free_multi_index( attr_name, start_index ):
+    """Find the next unconnected multi index starting at the passed in index."""
+    # assume a max of 10 million connections
+    while start_index < 10000000:
+        if len(pm.connectionInfo('{}[{}]'.format(attr_name,start_index), sfd=True) or []) == 0:
+            return start_index
+        start_index += 1
+
+    # No connections means the first index is available
+    return 0
+
+
+# calculating the offset matrix between driven and driver using code instead of nodes
+# Setup from https://bindpose.com/maya-matrix-based-functions-part-1-node-based-matrix-constraint/
+# Code below is to set the offset in the matrixIn[0]
+# localOffset = getLocalOffset(parent, child)
+# mc.setAttr("multMatrix1.matrixIn[0]", [localOffset(i, j) for i in range(4) for j in range(4)], type="matrix"
+# START
+def get_dag_path(node=None):
+    sel = om.MSelectionList()
+    sel.add(node)
+    d = om.MDagPath()
+    sel.getDagPath(0, d)
+    return d
+
+
+def get_local_offset(parent, child):
+    parent_wm = get_dag_path(parent).inclusiveMatrix()
+    child_wm = get_dag_path(child).inclusiveMatrix()
+    return child_wm * parent_wm.inverse()
+# END
+
 
 
 def matrix_constraint(driver, driven, mo=True, channels=['t', 'r', 's']):
