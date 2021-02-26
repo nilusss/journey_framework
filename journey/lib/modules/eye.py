@@ -5,13 +5,14 @@ module containing eye setup.
 import pymel.core as pm
 import journey.lib.control as ctrl
 import journey.lib.utils.tools as tools
-from journey.lib.layout import Module
-from journey.lib.layout import Base
-reload(ctrl)
-reload(tools)
+import journey.lib.layout as lo
+# reload(ctrl)
+# reload(tools)
+# reload(lo)
+import journey.lib.layout as lo
 
 
-class Eye(Module):
+class Eye(lo.Module):
     def __init__(self,
                  eye_center='',
                  eye_end='',
@@ -22,7 +23,6 @@ class Eye(Module):
                  ):
 
         self.CLASS_NAME = self.__class__.__name__
-
         self.eye_center = eye_center
         self.eye_end = eye_end
         self.look_at = look_at
@@ -30,12 +30,17 @@ class Eye(Module):
         self.scale = scale
         self.base_rig = base_rig
 
+        # # init Module class
+        # Module.__init__(self, self.prefix, self.base_rig)
         # init Module class
-        Module.__init__(self, self.prefix, self.base_rig)
+        print type(self)
+        # import pdb; pdb.set_trace()
+        # super(Eye, self).__init__(self.prefix, self.base_rig)
+        #super(Eye, self).__init__(self.prefix, self.base_rig)
 
     def create(self, *args):
         # create module from parent class
-        Module.create_structure(self)
+        super(Eye, self).create_structure()
 
         eye_center_ctrl = ctrl.Control(prefix=self.prefix + '_rot',
                                        scale=self.scale,

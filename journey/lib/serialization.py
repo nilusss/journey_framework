@@ -13,6 +13,8 @@ import json
 
 def decode(o):
     import journey.lib.modules as mo
+    # reload(mo)
+    # import journey.lib.modules as mo
     if o.get('CLASS_NAME'):
         module = str(o.get('CLASS_NAME')).lower()
         exec ("return_class = mo.{}.{}()".format(module, o.get('CLASS_NAME')))
@@ -37,7 +39,11 @@ class Encoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-class Serialize():
+class Serialize(object):
+    def __init__(self):
+        super(Serialize, self).__init__()
+        print("init serialize")
+
     def serialize(self):
         return json.dumps(self.__dict__, cls=Encoder)
         # return dict(class_name='__{}__'.format(self.__class__.__name__), struct=json.dumps(self.__dict__, cls=Encoder))

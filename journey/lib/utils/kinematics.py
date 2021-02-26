@@ -2,8 +2,9 @@
 module containing different class kinematics for fk, ik, spline.
 """
 import pymel.core as pm
-import journey as jn
+import journey.lib.control as ctrl
 import journey.lib.utils.tools as tools
+reload(ctrl)
 reload(tools)
 
 
@@ -15,12 +16,12 @@ class FK:
     fk_dict = {}
 
     def __init__(self,
-                 prefix='new',
-                 scale=1.0,
-                 driven='',
+                 driven=[],
                  rot_to=True,
                  parent=True,
                  shape='circle',
+                 prefix='new',
+                 scale=1.0,
                  channels=['t', 's', 'v'],
                  rig_module=None,
                  ):
@@ -40,7 +41,7 @@ class FK:
         self.driven = tools.list_check(self.driven)
 
         for i, joint in enumerate(self.driven):
-            fk_ctrl = jn.Control(prefix=self.prefix,
+            fk_ctrl = ctrl.Control(prefix=joint.replace('_jnt', ''),
                                    scale=self.scale,
                                    trans_to=joint,
                                    rot_to=joint,
@@ -71,18 +72,22 @@ class FK:
     def create(self, *args):
         ctrls = self.ctrl()
         self.driven = tools.list_check(self.driven)
+        print self.driven
+        print self.fk_dict
         for driven in self.driven:
-            tools.matrix_constraint(self.fk_dict[''+driven+''].get_ctrl(), driven)
+            driven = pm.PyNode(driven)
+            tools.parent_rm(self.fk_dict[driven].get_offset(), self.rig_module, 'controls_grp')
+            tools.matrix_constraint(self.fk_dict[driven].get_ctrl(), driven)
 
 
 class IK:
     def __init__(self,
-                 prefix='new',
-                 scale=1.0,
-                 driven='',
+                 driven=[],
                  rot_to=True,
                  parent=True,
                  shape='circle',
+                 prefix='new',
+                 scale=1.0,
                  channels=['s', 'v'],
                  rig_module=None,
                  ):
@@ -101,7 +106,7 @@ class IK:
         self.pv_loc = ''
 
     def create(self, *args):
-        self.ik_ctrl = jn.Control(prefix=self.prefix + 'IK', trans_to=self.driven[-1],
+        self.ik_ctrl = ctrl.Control(prefix=self.prefix + 'IK', trans_to=self.driven[-1],
                                     rot_to=self.driven[-1], scale=self.scale, shape='cube')
         self.ik_ctrl.create()
         tools.parent_rm(self.ik_ctrl.get_offset(), self.rig_module, 'controls_grp')
@@ -126,21 +131,23 @@ class IK:
         pm.delete(temp_hdl)
 
         # create pv ctrl and pv constraint
-        self.pv_ctrl = jn.Control(prefix=self.prefix + 'PoleVec', scale=self.scale,
+        self.pv_ctrl = ctrl.Control(prefix=self.prefix + 'PoleVec', scale=self.scale,
                                     shape='fancy_sphere', channels=['r', 's', 'v'])
         self.pv_ctrl.create()
-        tools.parent_rm(self.pv_ctrl, self.rig_module, 'controls_grp')
+        tools.parent_rm(self.pv_ctrl.get_offset(), self.rig_module, 'controls_grp')
 
         self.pv_loc = tools.get_pole_vec_pos(self.driven)
         self.pv_loc.attr('visibility').set(0)
         pm.rename(self.pv_loc, self.prefix + 'poleVec_loc')
 
-        tools.parent_rm(self.pv_loc, self.rig_module, 'part_grp')
+        tools.parent_rm(self.pv_loc, self.rig_module, 'parts_grp')
         pm.delete(pm.parentConstraint(self.pv_loc, self.pv_ctrl.get_offset()))
 
         tools.matrix_constraint(self.pv_ctrl.get_ctrl(), self.pv_loc, mo=True)
         pm.poleVectorConstraint(self.pv_ctrl.get_ctrl(), self.ik_hdl)
-        tools.create_line(start=self.driven[tools.get_mid_joint(self.driven)], end=self.pv_ctrl.get_ctrl(), prefix="")
+        crv_offset, crv, = tools.create_line(start=self.driven[tools.get_mid_joint(self.driven)], end=self.pv_ctrl.get_ctrl(),
+                                             prefix=self.prefix)
+        tools.parent_rm(crv_offset, self.rig_module, 'controls_grp')
 
     def stretch(self, *args):
         # define joints to stretch
@@ -279,7 +286,7 @@ class Spline:
         pm.parent(self.end_bind_jnt, w=True)
 
         # create controllers for bind joints
-        start_bind_ctrl = jn.Control(prefix=self.start_bind_jnt.replace('_jnt', ''),
+        start_bind_ctrl = ctrl.Control(prefix=self.start_bind_jnt.replace('_jnt', ''),
                                        scale=self.scale,
                                        trans_to=self.start_bind_jnt,
                                        rot_to=self.start_bind_jnt,
@@ -287,7 +294,7 @@ class Spline:
         start_bind_ctrl.create()
         start_bind_ctrl.set_constraint(self.start_bind_jnt)
 
-        end_bind_ctrl = jn.Control(prefix=self.end_bind_jnt.replace('_jnt', ''),
+        end_bind_ctrl = ctrl.Control(prefix=self.end_bind_jnt.replace('_jnt', ''),
                                      scale=self.scale,
                                      trans_to=self.end_bind_jnt,
                                      rot_to=self.end_bind_jnt,
