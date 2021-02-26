@@ -8,7 +8,15 @@ import pymel.core as pm
 import journey as jn
 import journey.lib.utils.tools as tools
 from journey.env import JF_VERSION, JF_AUTHOR, JF_NAME
+<<<<<<< Updated upstream
 reload(tools)
+=======
+import journey.lib.serialization as se
+reload(ctrl)
+reload(tools)
+reload(se)
+import journey.lib.serialization as se
+>>>>>>> Stashed changes
 
 
 class Base:
@@ -95,14 +103,26 @@ class Module(jn.Serialize):
     class for building rig module structure
     """
 
+    all_names_list = []
+    all_instances_list = []
+
     def __init__(self,
                  prefix='new',
                  base_rig=None
                  ):
+<<<<<<< Updated upstream
+=======
+        super(Module, self).__init__()
+        self.all_names_list = all_names_list
+        self.all_instances_list = all_instances_list
+>>>>>>> Stashed changes
         self.prefix = prefix
         self.base_rig = base_rig
 
     def create_structure(self, *args):
+        print self.prefix
+        if pm.ls(self.prefix +'_*'):
+            pm.error("Module already exists with prefix: " + self.prefix)
         # create initial rig structure groups
         self.top_grp = pm.group(name=self.prefix + '_module_grp', em=1)
         self.controls_grp = pm.group(name=self.prefix + '_controls_grp', em=1, p=self.top_grp)
@@ -135,3 +155,17 @@ class Module(jn.Serialize):
             pm.rename(s, s.replace(self.prefix, new_prefix))
 
         self.prefix = new_prefix
+<<<<<<< Updated upstream
+=======
+
+    def get_instance(self):
+        return self
+
+    def get_all_module_names(self):
+        self.all_names_list.append(self.prefix)
+        return self.all_names_list
+
+    def get_all_module_instances(self):
+        self.all_instances_list.append(self)
+        return self.all_instances_list
+>>>>>>> Stashed changes
