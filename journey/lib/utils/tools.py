@@ -9,13 +9,10 @@ import maya.OpenMaya as om
 
 def list_check(check):
     """Convert argument to a list and return the list
-
     Args:
         check: str, argument to be converted to list
-
     Returns:
         list, converted list
-
     """
     if type(check) is str:
         check = check.split()
@@ -35,33 +32,28 @@ def split_at(s, c, n):
 
 def parent_rm(child, module, module_grp):
     """Used to check if parenting objects to a specific rig module group is possible
-
     Args:
         child: str, object to be parented
         module: str, class module, often written as rig_module
         module_grp: str, a rig module class group
-
     """
     try:
-        exec('return_module = {}.{}'.format(module, module_grp))
-        pm.parent(child, return_module)
+        #exec('return_module = {}.{}'.format(module.prefix, module_grp))
+        pm.parent(child, '{}_{}'.format(module.prefix, module_grp))
     except AttributeError as e:
         print("No rig module to parent under: \"{}\" ".format(str(e)))
 
 
 def lock_channels(obj, channels=['t', 'r', 's'], t_axis=['x', 'y', 'z'], r_axis=['x', 'y', 'z'], s_axis=['x', 'y', 'z']):
     """Lock objects specified channel
-
     Args:
         obj: str, node to have it's channels locked
         channels: list(str), main channels to lock
         t_axis: list(str), translate axises to lock
         r_axis: list(str), rotate axises to lock
         s_axis: list(str), scale axises to lock
-
     Returns:
         list, of all attributes that has been locked
-
     """
     # lock control channels
     single_attr_lock_list = []
@@ -81,18 +73,15 @@ def lock_channels(obj, channels=['t', 'r', 's'], t_axis=['x', 'y', 'z'], r_axis=
 
 
 def unlock_channels(obj, channels=['t', 'r', 's'], t_axis=['x', 'y', 'z'], r_axis=['x', 'y', 'z'], s_axis=['x', 'y', 'z']):
-    """Unocks objects specified channel
-
+    """Unlocks objects specified channel
     Args:
         obj: str, node to have it's channels unlocked
         channels: list(str), main channels to unlock
         t_axis: list(str), translate axises to unlock
         r_axis: list(str), rotate axises to unlock
         s_axis: list(str), scale axises to unlock
-
     Returns:
         list, of all attributes that has been unlocked
-
     """
     # unlock control channels
     single_attr_unlock_list = []
@@ -154,8 +143,9 @@ def matrix_constraint(driver, driven, mo=True, channels=['t', 'r', 's']):
         driven: str, object to be driven by the constraint
         mo: bool, whether the driven object to maintain offset compared to driver
         channels: list(str), attributes to constrain
-
     """
+    driver = pm.PyNode(driver)
+    driven = pm.PyNode(driven)
     mult_matrix = pm.createNode('multMatrix', n=driven + '_multMatrix')
     decompose_matrix = pm.createNode('decomposeMatrix', n=driven + '_decomposeMatrix')
     pm.connectAttr(mult_matrix + '.matrixSum', decompose_matrix + '.inputMatrix', force=True)
@@ -209,7 +199,6 @@ def matrix_constraint(driver, driven, mo=True, channels=['t', 'r', 's']):
 
 def matrix_blend(driver1, driven, blender, driver2, mo=False, blend_value=0.0, channels=['t', 'r', 's']):
     """Create a matrix blend constraint
-
     Args:
         driver1: list(str), first object to drive the driven
         driven: list(str), object to be driven by driver1 and driver2
@@ -218,7 +207,6 @@ def matrix_blend(driver1, driven, blender, driver2, mo=False, blend_value=0.0, c
         mo: bool, whether the driven object to maintain offset compared to driver
         blend_value: float
         channels: list(str), attributes to be driven
-
     """
 
     # driver1 = list_check(driver1)
@@ -293,16 +281,13 @@ def matrix_blend(driver1, driven, blender, driver2, mo=False, blend_value=0.0, c
 
 def joint_duplicate(joint_chain, joint_type, offset_grp='', skip=0):
     """Duplicate a joint chain and change the type
-
     Args:
         joint_chain: list(str), joint chain to duplicate
         joint_type: str, new joint chain type, eg. FK/IK
         offset_grp: str, group to parent the new joint chain under
         skip: int, nth number to skip in the joint chain
-
     Returns:
         list, new joint chain
-
     """
     chain = []
     joint_chain = list_check(joint_chain)
@@ -325,13 +310,10 @@ def joint_duplicate(joint_chain, joint_type, offset_grp='', skip=0):
 
 def get_mid_joint(joint_chain):
     """Get the middle joint in a joint chain
-
     Args:
         joint_chain: list(str), joint chain to get the mid joint from
-
     Returns:
         int, mid joint number
-
     """
 
     if (len(joint_chain) % 2) == 0:
@@ -344,14 +326,11 @@ def get_mid_joint(joint_chain):
 
 def measure(start, end):
     """Create measure distance between to objects
-
     Args:
         start: str, where the measure tool should start
         end: str, where the measure tool should end
-
     Returns:
         distanceBetween node
-
     """
 
     dist = pm.createNode('distanceBetween', n='{}_{}_DIST'.format(start, end))
@@ -363,15 +342,12 @@ def measure(start, end):
 
 def create_line(start, end, prefix="new"):
     """Create a template line between two objects
-
     Args:
         start: str, object to start the line from
         end: str, object to end the line
         prefix: str, what to call the new line
-
     Returns:
         dict, curve object and curve offset group
-
     """
 
     pos1 = pm.xform(start, q=1, t=1, ws=1)
@@ -384,19 +360,15 @@ def create_line(start, end, prefix="new"):
     offset_grp.attr('inheritsTransform').set(0)
     pm.parent(crv, offset_grp)
 
-    return {'crv': crv,
-            'grp': offset_grp}
+    return offset_grp, crv
 
 
 def create_loc(pos):
     """Create a locator a the given position
-
     Args:
         pos: maya.OpenMaya.MVector, a vector of x, y, z
-
     Returns:
         str, locator name
-
     """
 
     loc = pm.spaceLocator()
@@ -407,13 +379,10 @@ def create_loc(pos):
 
 def get_pole_vec_pos(joint_list):
     """Create a locator from the joint list
-
     Args:
         joint_list: list(str), joint list to get the pole vector position from
-
     Returns:
         str, newly created locator
-
     """
 
     mid_joint = get_mid_joint(joint_list)
@@ -444,14 +413,12 @@ def get_pole_vec_pos(joint_list):
 def joint_constraint(driver1, driven, blender='', driver2='', channels=['t', 'r', 's']):
     """Used for constraining joints to other joints. Mainly used for constraining triple chain setups.
     Can also be used for 1:1 joint connections
-
     Args:
         driver1 (str, list): joint(s) to control the driven joint chain. FK
         driven (str, list): joint(s) to be driven by driver(s)
         blender (str): controller used for blending between FK and IK
         driver2 (str, list): joint(s) to control the driven joint chain. IK
         channels (list): channels that should be constrained
-
     """
     driver1 = list_check(driver1)
     driver2 = list_check(driver2)
@@ -535,7 +502,6 @@ def joint_on_curve(curve, prefix='new', parent=False, radius=0.5):
 
 def insert_joints(start, end, amount, trans_first=False, first=False, both=False):
     """Insert new joints between two joints
-
     Args:
         start: str, start joint to insert the new joints between
         end: str, end joint to insert the new joints between
@@ -543,10 +509,8 @@ def insert_joints(start, end, amount, trans_first=False, first=False, both=False
         trans_first: bool, whether the first inserted joint should be translated to the start joint
         first: bool, whether to parent the inserted joints to the first joint
         both: bool, whether to parent the inserted joints between the first and last joint
-
     Returns:
         list, inserted joint chain
-
     """
     amount = float(amount)
     spacing = 1/float(amount+1)
@@ -605,16 +569,13 @@ def insert_joints(start, end, amount, trans_first=False, first=False, both=False
 
 def simple_twist(end, twist_joints='', start='', amount=''):
     """Create a simple twist setup. Can also create the twist joints
-
     Args:
         end (str): last joint in the joint chain to compare twist joint rotations to
         twist_joints (list): joints to be twisted
         start (str): first joint to place the twist joints between - optional
         amount (str): amount of twist joints - optional
-
     Returns:
         list, twist joint chain
-
     """
     # if arguments are passed create a twist joint chain
     if start and end and amount:
