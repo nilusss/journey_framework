@@ -43,7 +43,7 @@ class SpaceSwitcherLogic(object):
 
 
         # If the driver follows my naming convention split it at the second underscore
-        drivers_nicename = 'World:'.join('%s:' % tools.split_at(driver, '_', 2) for driver in self.drivers)
+        drivers_nicename = 'World:'+''.join('%s:' % tools.split_at(driver, '_', 2) for driver in self.drivers)
         # setup switching attr on driven ctrl
         try:
             pm.getAttr(self.driven + '.pspace')
