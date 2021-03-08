@@ -3,6 +3,8 @@ module for setting up space switching on objects
 
 setup_switcher - creates space switching with the given arguments
 add_space - adds a new space for the existing space switching system
+
+TODO: split translate and rotate parent space in two different attributes if bool argument added
 """
 
 import pymel.core as pm
@@ -24,10 +26,10 @@ class SpaceSwitcherLogic(object):
             channels:
             base_rig:
         """
+        self.drivers = drivers
         self.driven = driven
         self.driven_offset = pm.listRelatives(self.driven, parent=True)[0]
         self.prefix = tools.split_at(self.driven, '_', 2)
-        self.drivers = drivers
         self.channels = channels
         self.base_rig = base_rig
 
@@ -40,7 +42,9 @@ class SpaceSwitcherLogic(object):
                 pm.parent(world_space, self.base_rig.rig_grp)
             except AttributeError as e:
                 print("No rig to parent under: \"{}\" ".format(str(e)))
-
+        else:
+            world_space = world_space[0]
+        self.drivers = tools.list_check(self.drivers)
 
         # If the driver follows my naming convention split it at the second underscore
         drivers_nicename = 'World:'+''.join('%s:' % tools.split_at(driver, '_', 2) for driver in self.drivers)
@@ -53,6 +57,7 @@ class SpaceSwitcherLogic(object):
             pm.addAttr(self.driven, shortName='space', longName='space',
                        at="enum", enumName=drivers_nicename, keyable=False)
             pm.setAttr(self.driven + '.space', edit=True, channelBox=True)
+            pm.setAttr(self.driven + '.pspace', edit=True, channelBox=True)
 
         # create necessary nodes for the space switching
         # create two choice nodes for the driver matrix and offset matrix
@@ -63,9 +68,13 @@ class SpaceSwitcherLogic(object):
         space_mm = pm.createNode('multMatrix', n=self.prefix + '_space_mm')
         space_dm = pm.createNode('decomposeMatrix', n=self.prefix + '_space_dm')
 
+        # create buffer node
+
+
         # setup initial connections between nodes
         for driver in world_space.name().split() + self.drivers:
-            local_offset = tools.get_local_offset(driver, self.driven)
+            local_offset = tools.get_local_offset(pm.PyNode(driver).name(),
+                                                  pm.PyNode(self.driven).name())
             idx = tools.get_next_free_multi_index(self.space_choice + '.input', 0)
             offset_matrix = pm.createNode('multMatrix', n=self.prefix + driver +'_offset_matrix')
 
@@ -75,7 +84,9 @@ class SpaceSwitcherLogic(object):
             pm.connectAttr(driver + '.worldMatrix', self.space_choice + '.input[{}]'.format(idx), force=True)
 
         pm.connectAttr(self.space_choice + '.output', space_mm + '.matrixIn[1]')
-        pm.connectAttr('pCube1_buffer.worldInverseMatrix[0]', space_mm + '.matrixIn[2]')
+        driven_parent = pm.listRelatives(self.driven, parent=True)[0]
+        driven_buffer = pm.listRelatives(self.driven, parent=True)[0]
+        pm.connectAttr(driven_parent + '.parentInverseMatrix[0]', space_mm + '.matrixIn[2]')
         pm.connectAttr(space_mm + '.matrixSum', space_dm + '.inputMatrix')
         for m in self.channels:
             pm.connectAttr(space_dm + '.o' + m, self.driven_offset + '.' + m)
@@ -99,7 +110,6 @@ class SpaceSwitcherLogic(object):
                        [local_offset(i, j) for i in range(4) for j in range(4)])
             pm.connectAttr(driver + '.worldMatrix', self.space_choice + '.input[{}]'.format(idx), force=True)
 
-
             # If the driver follows my naming convention split it at the second underscore
             driver_nicename = tools.split_at(driver, '_', 2)
             get_enums = pm.attributeQuery('space', node=self.driven, listEnum=True)[0] + ':' + driver_nicename
@@ -107,3 +117,6 @@ class SpaceSwitcherLogic(object):
 
             idx = tools.get_next_free_multi_index(self.space_choice + '.input', 0)
             pm.connectAttr(driver + '.worldMatrix', self.space_choice + '.input[{}]'.format(idx), force=True)
+
+    def set_space(self, space):
+        pm.setAttr(self.driven + '.space', tools.split_at(space, '_', 2))
