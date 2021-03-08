@@ -107,8 +107,7 @@ class Module(se.Serialize):
                  base_rig=None
                  ):
         super(Module, self).__init__()
-        # self.all_names_list = all_names_list
-        # self.all_instances_list = all_instances_list
+
         self.prefix = prefix
         self.base_rig = base_rig
 
@@ -123,6 +122,8 @@ class Module(se.Serialize):
         self.parts_grp = pm.group(name=self.prefix + '_parts_grp', em=1, p=self.top_grp)
         self.static_grp = pm.group(name=self.prefix + '_static_grp', em=1, p=self.top_grp)
         # self.info_grp = pm.group(name=prefix + '_info_grp', em=1, p=self.topGrp)
+        self.joints_offset_grp = pm.createNode('transform', n=self.prefix + 'joints_offset_grp')
+        pm.parent(self.joints_offset_grp, self.joints_grp)
 
         # hide module groups and make static group
         pm.hide(self.parts_grp, self.static_grp, self.joints_grp)
@@ -152,10 +153,10 @@ class Module(se.Serialize):
     def get_instance(self):
         return self
 
-    # def get_all_module_names(self):
-    #     self.all_names_list.append(self.prefix)
-    #     return self.all_names_list
-    #
-    # def get_all_module_instances(self):
-    #     self.all_instances_list.append(self)
-    #     return self.all_instances_list
+    def get_all_module_names(self):
+        self.all_names_list.append(self.prefix)
+        return self.all_names_list
+
+    def get_all_module_instances(self):
+        self.all_instances_list.append(self)
+        return self.all_instances_list
