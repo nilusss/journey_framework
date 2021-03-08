@@ -14,15 +14,26 @@ def list_check(check):
     Returns:
         list, converted list
     """
-    if type(check) is str:
-        check = check.split()
+    rtrn_list = check
+    if type(check) is not list:
+        rtrn_list = [check]
 
-    return check
+    return rtrn_list
 
 
 def convert_scale(scale):
-    if type(scale) is int or float:
-        return [scale, scale, scale]
+    if type(scale) is not list:
+        scale = [scale, scale, scale]
+    return scale
+
+
+def letter_to_int(letter):
+    alpha = list('abcdefghijklmnopqrstuvwxyz')
+    return alpha.index(letter) + 1
+
+def int_to_letter(int):
+    alpha = list('abcdefghijklmnopqrstuvwxyz')
+    return alpha[int]
 
 
 def split_at(s, c, n):
@@ -120,6 +131,10 @@ def get_next_free_multi_index( attr_name, start_index ):
 # mc.setAttr("multMatrix1.matrixIn[0]", [localOffset(i, j) for i in range(4) for j in range(4)], type="matrix"
 # START
 def get_dag_path(node=None):
+    # print node
+    # if type(node) is not str:
+    #     print type(node)
+    #     node.name()
     sel = om.MSelectionList()
     sel.add(node)
     d = om.MDagPath()
@@ -197,7 +212,7 @@ def matrix_constraint(driver, driven, mo=True, channels=['t', 'r', 's']):
     #         pm.connectAttr(decompose_matrix + '.o' + m, driven + '.' + m)
 
 
-def matrix_blend(driver1, driven, blender, driver2, mo=False, blend_value=0.0, channels=['t', 'r', 's']):
+def matrix_blend(driver1, driven, blender, driver2, mo=False, blend_value=0.0, force=False, channels=['t', 'r', 's']):
     """Create a matrix blend constraint
     Args:
         driver1: list(str), first object to drive the driven
@@ -230,50 +245,50 @@ def matrix_blend(driver1, driven, blender, driver2, mo=False, blend_value=0.0, c
     if mo is True:
         driver1_lo_matrix = pm.createNode('multMatrix', n=driver1 + 'localOffset_multMatrix')
         driver2_lo_matrix = pm.createNode('multMatrix', n=driver1 + 'localOffset_multMatrix')
-        pm.connectAttr(driven + '.worldMatrix[0]', driver1_lo_matrix + '.matrixIn[0]')
-        pm.connectAttr(driven + '.worldMatrix[0]', driver2_lo_matrix + '.matrixIn[0]')
-        pm.connectAttr(driver1 + '.worldInverseMatrix[0]', driver1_lo_matrix + '.matrixIn[1]')
-        pm.connectAttr(driver2 + '.worldInverseMatrix[0]', driver2_lo_matrix + '.matrixIn[1]')
+        pm.connectAttr(driven + '.worldMatrix[0]', driver1_lo_matrix + '.matrixIn[0]', force=force)
+        pm.connectAttr(driven + '.worldMatrix[0]', driver2_lo_matrix + '.matrixIn[0]', force=force)
+        pm.connectAttr(driver1 + '.worldInverseMatrix[0]', driver1_lo_matrix + '.matrixIn[1]', force=force)
+        pm.connectAttr(driver2 + '.worldInverseMatrix[0]', driver2_lo_matrix + '.matrixIn[1]', force=force)
         driver1_lo = pm.getAttr(driver1_lo_matrix + '.matrixSum')
         driver2_lo = pm.getAttr(driver2_lo_matrix + '.matrixSum')
         pm.setAttr(ik_mult + '.matrixIn[0]', driver1_lo, type='matrix')
         pm.setAttr(fk_mult + '.matrixIn[0]', driver2_lo, type='matrix')
-        pm.connectAttr(driver1 + '.worldMatrix[0]', ik_mult + '.matrixIn[1]')
-        pm.connectAttr(driver2 + '.worldMatrix[0]', fk_mult + '.matrixIn[1]')
-        pm.connectAttr(driven + '.parentInverseMatrix[0]', ik_mult + '.matrixIn[2]')
-        pm.connectAttr(driven + '.parentInverseMatrix[0]', fk_mult + '.matrixIn[2]')
+        pm.connectAttr(driver1 + '.worldMatrix[0]', ik_mult + '.matrixIn[1]', force=force)
+        pm.connectAttr(driver2 + '.worldMatrix[0]', fk_mult + '.matrixIn[1]', force=force)
+        pm.connectAttr(driven + '.parentInverseMatrix[0]', ik_mult + '.matrixIn[2]', force=force)
+        pm.connectAttr(driven + '.parentInverseMatrix[0]', fk_mult + '.matrixIn[2]', force=force)
 
     else:
-        pm.connectAttr(driver2 + '.worldMatrix', ik_mult + '.matrixIn[1]')
-        pm.connectAttr(driver1 + '.worldMatrix', fk_mult + '.matrixIn[1]')
+        pm.connectAttr(driver2 + '.worldMatrix', ik_mult + '.matrixIn[1]', force=force)
+        pm.connectAttr(driver1 + '.worldMatrix', fk_mult + '.matrixIn[1]', force=force)
 
-    pm.connectAttr(ik_mult + '.matrixSum', blend_matrix + '.wtMatrix[0].matrixIn')
-    pm.connectAttr(fk_mult + '.matrixSum', blend_matrix + '.wtMatrix[1].matrixIn')
+    pm.connectAttr(ik_mult + '.matrixSum', blend_matrix + '.wtMatrix[0].matrixIn', force=force)
+    pm.connectAttr(fk_mult + '.matrixSum', blend_matrix + '.wtMatrix[1].matrixIn', force=force)
 
-    pm.connectAttr(blend_matrix + '.matrixSum', blend_mult + '.matrixIn[0]')
-    pm.connectAttr(driven + '.parentInverseMatrix[0]', blend_mult + '.matrixIn[1]')
-    pm.connectAttr(blend_mult + '.matrixSum', blend_decomp + '.inputMatrix')
+    pm.connectAttr(blend_matrix + '.matrixSum', blend_mult + '.matrixIn[0]', force=force)
+    pm.connectAttr(driven + '.parentInverseMatrix[0]', blend_mult + '.matrixIn[1]', force=force)
+    pm.connectAttr(blend_mult + '.matrixSum', blend_decomp + '.inputMatrix', force=force)
 
     if pm.nodeType(driven) == 'joint':
         q_p = pm.createNode("quatProd", n=driven + '_quatProd')
         q_i = pm.createNode("quatInvert", n=driven + '_quatInvert')
         e_tq = pm.createNode("eulerToQuat", n=driven + '_eulerToQuat')
         q_te = pm.createNode("quatToEuler", n=driven + '_quatToEuler')
-        pm.connectAttr(blend_decomp + '.outputQuat', q_p + '.input1Quat')
-        pm.connectAttr(driven + '.jointOrient', e_tq + '.inputRotate')
-        pm.connectAttr(e_tq + '.outputQuat', q_i + '.inputQuat')
-        pm.connectAttr(q_i + '.outputQuat', q_p + '.input2Quat')
-        pm.connectAttr(q_p + '.outputQuat', q_te + '.inputQuat')
+        pm.connectAttr(blend_decomp + '.outputQuat', q_p + '.input1Quat', force=force)
+        pm.connectAttr(driven + '.jointOrient', e_tq + '.inputRotate', force=force)
+        pm.connectAttr(e_tq + '.outputQuat', q_i + '.inputQuat', force=force)
+        pm.connectAttr(q_i + '.outputQuat', q_p + '.input2Quat', force=force)
+        pm.connectAttr(q_p + '.outputQuat', q_te + '.inputQuat', force=force)
 
-    pm.connectAttr(blender + '.blend', blend_matrix + '.wtMatrix[0].weightIn')
-    pm.connectAttr(blender + '.blend', reverse + '.inputX')
-    pm.connectAttr(reverse + '.outputX', blend_matrix + '.wtMatrix[1].weightIn')
+    pm.connectAttr(blender + '.blend', blend_matrix + '.wtMatrix[0].weightIn', force=force)
+    pm.connectAttr(blender + '.blend', reverse + '.inputX', force=force)
+    pm.connectAttr(reverse + '.outputX', blend_matrix + '.wtMatrix[1].weightIn', force=force)
 
     for m in channels:
         if m == 'r' and pm.nodeType(driven) == 'joint':
-            pm.connectAttr(q_te + '.outputRotate', driven + '.r')
+            pm.connectAttr(q_te + '.outputRotate', driven + '.r', force=force)
         else:
-            pm.connectAttr(blend_decomp + '.o' + m, driven + '.' + m)
+            pm.connectAttr(blend_decomp + '.o' + m, driven + '.' + m, force=force)
     # pm.connectAttr(q_te + '.outputRotate', driven + '.r')
     # pm.connectAttr(blend_decomp + '.outputTranslate', driven + '.t')
     # pm.connectAttr(blend_decomp + '.outputScale', driven + '.s')
