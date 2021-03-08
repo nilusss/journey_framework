@@ -9,6 +9,7 @@ import journey.lib.utils.shapes as shapes
 import journey.lib.utils.tools as tools
 from journey.lib.utils.tools import lock_channels
 import journey.lib.utils.color as color
+from maya.cmds import DeleteHistory
 
 reload(tools)
 reload(shapes)
@@ -174,6 +175,15 @@ class Control:
 
     def set_constraint(self, driven, mo=True, channels=['t', 'r', 's']):
         tools.matrix_constraint(self.get_ctrl(), driven, mo=mo, channels=channels)
+
+    def freeze_transforms(self, channels=['s']):
+        tools.unlock_channels(self.get_offset(), channels=channels)
+        tools.unlock_channels(self.get_ctrl(), channels=channels)
+        pm.makeIdentity(self.get_offset(), apply=True)
+        DeleteHistory()
+        tools.lock_channels(self.get_offset(), channels=channels)
+        tools.lock_channels(self.get_ctrl(), channels=channels)
+
 
     def get_ctrl(self, *args):
         return self.ctrl_object

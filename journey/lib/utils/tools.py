@@ -5,6 +5,7 @@ various tools for the framework
 import pymel.core as pm
 from pymel.all import mel
 import maya.OpenMaya as om
+import journey.lib.control as ctrl
 
 
 def list_check(check):
@@ -611,3 +612,68 @@ def simple_twist(end, twist_joints='', start='', amount=''):
         pm.connectAttr(mult + '.outputY', joint + '.rotateX')
 
     return twist_joints
+
+
+def setup_splay(splay_mid_ctrl, splay_ctrl, drivens, meta_ctrls_offset=[], prefix='new', scale=1):
+    # mid splay multiplier
+    mid_param = 0.5
+    mid_joint = get_mid_joint(drivens)
+
+    # loop through every driven, create controller and setup splay node system
+    for i, driven in enumerate(drivens):
+        letter = int_to_letter(i).capitalize()
+        flt_int = float(i)
+        mid_attr_name = "splayMidMultiplier" + letter
+        mid_attr_value = (1.0 / float(len(drivens) - 1)) * flt_int
+        mid_attr_value = abs(mid_param - mid_attr_value)
+
+        end_attr_name = "splayMultiplier" + letter
+        end_attr_value = (1.0 / float(len(drivens) - 1)) * flt_int
+
+        pm.addAttr(splay_mid_ctrl, shortName=mid_attr_name, longName=mid_attr_name, min=0.0, max=1.0,
+                   defaultValue=mid_attr_value, k=True)
+        pm.addAttr(splay_ctrl, shortName=end_attr_name, longName=end_attr_name, min=0.0, max=1.0,
+                   defaultValue=end_attr_value, k=True)
+        if not meta_ctrls_offset:
+            meta_ctrl = ctrl.Control(prefix=prefix + letter,
+                                     scale=scale,
+                                     trans_to=driven,
+                                     rot_to=driven,
+                                     shape='circle')
+            meta_ctrl.create()
+            meta_ctrl.freeze_transforms()
+            meta_ctrl.set_constraint(driven)
+            meta_ctrl_offset = meta_ctrl.get_offset()
+        else:
+            meta_ctrl_offset = meta_ctrls_offset[i]
+
+        # setup splay rotation
+        mid_md = pm.createNode('multiplyDivide', n=prefix + letter + '_mid_md')
+        end_md = pm.createNode('multiplyDivide', n=prefix + letter + '_end_md')
+
+        pma = pm.createNode('plusMinusAverage', n=prefix + letter + '_pma')
+
+        if i <= mid_joint:
+            mid_rev = pm.createNode('multiplyDivide', n=prefix + letter + '_mid_rev_md')
+            pm.connectAttr(splay_mid_ctrl + '.rotate', mid_rev + '.input1')
+            mid_rev.attr('input2X').set(-1)
+            mid_rev.attr('input2Y').set(-1)
+            mid_rev.attr('input2Z').set(-1)
+
+            mid_rev.output.connect(mid_md.input1)
+        else:
+            pm.connectAttr(splay_mid_ctrl + '.rotate', mid_md + '.input1')
+
+        pm.connectAttr(splay_ctrl + '.rotate', end_md + '.input1')
+        pm.connectAttr(splay_mid_ctrl + '.' + mid_attr_name, mid_md + '.input2X')
+        pm.connectAttr(splay_mid_ctrl + '.' + mid_attr_name, mid_md + '.input2Y')
+        pm.connectAttr(splay_mid_ctrl + '.' + mid_attr_name, mid_md + '.input2Z')
+
+        pm.connectAttr(splay_ctrl + '.' + end_attr_name, end_md + '.input2X')
+        pm.connectAttr(splay_ctrl + '.' + end_attr_name, end_md + '.input2Y')
+        pm.connectAttr(splay_ctrl + '.' + end_attr_name, end_md + '.input2Z')
+
+        end_md.output.connect(pma.input3D[0])
+        mid_md.output.connect(pma.input3D[1])
+
+        pma.output3D.connect(meta_ctrl_offset.rotate)
