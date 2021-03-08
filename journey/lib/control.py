@@ -138,16 +138,30 @@ class Control:
 
         self.set_channels(self.channels)
 
+    def movable_pivot(self, *args):
+        piv_ctrl = pm.spaceLocator(n=self.prefix + '_piv_ctrl')
+
+        pm.scale(self.scale, self.scale, self.scale,)
+        pm.makeIdentity(piv_ctrl, apply=True, t=1, r=1, s=1, n=0)
+        pm.DeleteHistory(piv_ctrl)
+
+        pm.delete(pm.parentConstraint(self.get_ctrl(), piv_ctrl))
+        pm.parent(piv_ctrl, self.get_ctrl())
+
+        pm.connectAttr(piv_ctrl)
+
     def set_pivot(self, node):
         get_piv = pm.xform(node, piv=True, q=True, ws=True)
         pm.xform(self.get_ctrl(), ws=True, piv=(get_piv[0], get_piv[1], get_piv[2]))
         pm.xform(self.get_offset(), ws=True, piv=(get_piv[0], get_piv[1], get_piv[2]))
 
     def set_shape_scale(self, scale):
+        """Multiplies current scale value
+        """
         scale = tools.convert_scale(scale)
         print scale
         for shape in self.get_shapes():
-            pm.scale(pm.select(shape + '.cv[:]'), scale[0], scale[1], scale[2], absolute=True)
+            pm.scale(pm.select(shape + '.cv[:]'), scale[0], scale[1], scale[2], relative=True)
         # try:
         #     tools.unlock_channels(self.get_offset(), channels=['s'])
         #     tools.unlock_channels(self.get_ctrl(), channels=['s'])
