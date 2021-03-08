@@ -1,5 +1,7 @@
 """
 module containing different class kinematics for fk, ik, spline.
+
+TODO: Clean up outliner
 """
 import pymel.core as pm
 import journey.lib.control as ctrl
@@ -13,7 +15,7 @@ class FK:
     TODO: Squash and stretch
     NOTE: feed driven FK chain. no additional chains should be included.
     """
-    fk_dict = {}
+
 
     def __init__(self,
                  driven=[],
@@ -35,6 +37,7 @@ class FK:
         self.channels = channels
         self.rig_module = rig_module
         self.fk_ctrl = None
+        self.fk_dict = {}
 
     def ctrl(self, *args):
         # Check if driven is a str, then convert to list
@@ -72,8 +75,6 @@ class FK:
     def create(self, *args):
         ctrls = self.ctrl()
         self.driven = tools.list_check(self.driven)
-        print self.driven
-        print self.fk_dict
         for driven in self.driven:
             driven = pm.PyNode(driven)
             tools.parent_rm(self.fk_dict[driven].get_offset(), self.rig_module, 'controls_grp')
@@ -145,9 +146,9 @@ class IK:
 
         tools.matrix_constraint(self.pv_ctrl.get_ctrl(), self.pv_loc, mo=True)
         pm.poleVectorConstraint(self.pv_ctrl.get_ctrl(), self.ik_hdl)
-        crv_offset, crv, = tools.create_line(start=self.driven[tools.get_mid_joint(self.driven)], end=self.pv_ctrl.get_ctrl(),
+        self.crv_offset, crv, = tools.create_line(start=self.driven[tools.get_mid_joint(self.driven)], end=self.pv_ctrl.get_ctrl(),
                                              prefix=self.prefix)
-        tools.parent_rm(crv_offset, self.rig_module, 'controls_grp')
+        tools.parent_rm(self.crv_offset, self.rig_module, 'controls_grp')
 
     def stretch(self, *args):
         # define joints to stretch
@@ -191,8 +192,9 @@ class IK:
         up_dist_mdl = pm.createNode('multDoubleLinear', n=self.prefix + '_up_dist_mdl')
         lo_dist_mdl = pm.createNode('multDoubleLinear', n=self.prefix + '_lo_dist_mdl')
         # empty node at first joint
-        upper_null = pm.createNode('transform', n=self.prefix + 'upper_null')
-        pm.delete(pm.parentConstraint(upper_joint, upper_null))
+        self.upper_null = pm.createNode('transform', n=self.prefix + 'upper_null')
+        pm.delete(pm.parentConstraint(upper_joint, self.upper_null))
+        tools.parent_rm(self.upper_null, self.rig_module, 'parts_grp')
 
         # change operations
         mp_div.attr('operation').set(2)
@@ -202,10 +204,10 @@ class IK:
         # make three measurements - upper, lower, and first to last joint
         up_def_dist = tools.measure(def_joints[0], def_joints[1])
         lo_def_dist = tools.measure(def_joints[1], def_joints[-1])
-        full_dist = tools.measure(upper_null, self.ik_ctrl.get_ctrl())
+        full_dist = tools.measure(self.upper_null, self.ik_ctrl.get_ctrl())
 
         # make measurements from start and end to pole vector
-        pole_up_dist = tools.measure(upper_null, self.pv_ctrl.get_ctrl())
+        pole_up_dist = tools.measure(self.upper_null, self.pv_ctrl.get_ctrl())
         pole_lo_dist = tools.measure(self.ik_ctrl.get_ctrl(), self.pv_ctrl.get_ctrl())
 
         # get joints chain distance
@@ -255,25 +257,25 @@ class Spline:
     TODO: fix squash to squash gradually instead of same value for entire chain.
     """
     def __init__(self,
-                 prefix='new',
-                 scale=1.0,
-                 driven='',
+                 driven,
                  preserve_vol=True,
                  rot_to=True,
                  parent=True,
                  shape='circle',
                  channels=['s', 'v'],
+                 prefix='new',
+                 scale=1.0,
                  rig_module=None,
                  ):
 
-        self.prefix = prefix
-        self.scale = scale
         self.driven = driven
         self.preserve_vol = preserve_vol
         self.rot_to = rot_to
         self.parent = parent
         self.shape = shape
         self.channels = channels
+        self.prefix = prefix
+        self.scale = scale
         self.rig_module = rig_module
 
     def create(self, *args):
@@ -284,23 +286,29 @@ class Spline:
                                          name=self.driven[-1].replace('ik_jnt', 'IKBind_jnt'))[0]
 
         pm.parent(self.end_bind_jnt, w=True)
-
+        start_rot_jnt = ''
+        end_rot_jnt = ''
+        if self.rot_to:
+            start_rot_jnt = self.start_bind_jnt
+            end_rot_jnt = self.end_bind_jnt
         # create controllers for bind joints
-        start_bind_ctrl = ctrl.Control(prefix=self.start_bind_jnt.replace('_jnt', ''),
-                                       scale=self.scale,
-                                       trans_to=self.start_bind_jnt,
-                                       rot_to=self.start_bind_jnt,
-                                       shape='rectangle')
-        start_bind_ctrl.create()
-        start_bind_ctrl.set_constraint(self.start_bind_jnt)
+        self.start_bind_ctrl = ctrl.Control(prefix=self.start_bind_jnt.replace('_jnt', ''),
+                                            scale=self.scale,
+                                            trans_to=self.start_bind_jnt,
+                                            rot_to=start_rot_jnt,
+                                            shape='rectangle')
+        self.start_bind_ctrl.create()
+        self.start_bind_ctrl.set_constraint(self.start_bind_jnt)
 
-        end_bind_ctrl = ctrl.Control(prefix=self.end_bind_jnt.replace('_jnt', ''),
-                                     scale=self.scale,
-                                     trans_to=self.end_bind_jnt,
-                                     rot_to=self.end_bind_jnt,
-                                     shape='rectangle')
-        end_bind_ctrl.create()
-        end_bind_ctrl.set_constraint(self.end_bind_jnt)
+        self.end_bind_ctrl = ctrl.Control(prefix=self.end_bind_jnt.replace('_jnt', ''),
+                                          scale=self.scale,
+                                          trans_to=self.end_bind_jnt,
+                                          rot_to=end_rot_jnt,
+                                          shape='rectangle')
+        self.end_bind_ctrl.create()
+        self.end_bind_ctrl.set_constraint(self.end_bind_jnt)
+
+        #pm.select(self.driven[0], self.driven[-1])
 
         kwargs = {
             'name': self.prefix + '_hdl',
@@ -353,6 +361,23 @@ class Spline:
         arclen_div.attr('input2X').set(base_arclen)
         #pm.setAttr(arclen_div + '.input2X', base_arclen)
 
+        # create proxy attributes and enable on/off stretch attr
+        proxy_ctrl = pm.spaceLocator(self.prefix + 'proxy_ctrl')
+        proxy_ctrl.addAttr('Stretch', keyable=True, at='bool')
+
+        self.start_bind_ctrl.get_ctrl().addAttr('Stretch', usedAsProxy=True, keyable=True, at='bool')
+        self.end_bind_ctrl.get_ctrl().addAttr('Stretch', usedAsProxy=True, keyable=True, at='bool')
+
+        proxy_ctrl.Stretch.connect(self.start_bind_ctrl.get_ctrl().Stretch)
+        proxy_ctrl.Stretch.connect(self.end_bind_ctrl.get_ctrl().Stretch)
+
+        stretch_cnd = pm.createNode('condition', n=self.prefix + '_stretch_cnd')
+        stretch_rev = pm.createNode('reverse', n=self.prefix + 'stretch_rev')
+
+        proxy_ctrl.Stretch.connect(stretch_rev.inputX)
+        stretch_rev.outputX.connect(stretch_cnd.firstTerm)
+        pm.connectAttr(arclen_div + '.outputX', stretch_cnd + '.colorIfTrueR')
+
         # squash
         # adds squash to the entire chain
         power_div = None
@@ -367,7 +392,9 @@ class Spline:
 
         # scale each bone's length by the raised multiplier
         for joint in self.driven:
-            pm.connectAttr(arclen_div + '.outputX', joint + '.scaleX')
+
+            stretch_cnd.outColorR.connect(pm.PyNode(joint).scaleX)
+            #pm.connectAttr(arclen_div + '.outputX', joint + '.scaleX')
 
             if self.preserve_vol:
                 pm.connectAttr(power_div + '.outputX', joint + '.scaleY')

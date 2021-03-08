@@ -40,7 +40,6 @@ class Encoder(json.JSONEncoder):
 class Serialize(object):
     def __init__(self):
         super(Serialize, self).__init__()
-        print("init serialize")
 
     def serialize(self):
         return json.dumps(self.__dict__, cls=Encoder)

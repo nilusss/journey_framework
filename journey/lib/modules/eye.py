@@ -32,7 +32,6 @@ class Eye(lo.Module):
         # # init Module class
         # Module.__init__(self, self.prefix, self.base_rig)
         # init Module class
-        print type(self)
         # import pdb; pdb.set_trace()
         # super(Eye, self).__init__(self.prefix, self.base_rig)
         #super(Eye, self).__init__(self.prefix, self.base_rig)
