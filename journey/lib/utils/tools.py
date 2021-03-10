@@ -5,7 +5,7 @@ various tools for the framework
 import pymel.core as pm
 from pymel.all import mel
 import maya.OpenMaya as om
-import journey.lib.control as ctrl
+# import journey.lib.control as ctrl
 
 
 def list_check(check):
@@ -31,6 +31,7 @@ def convert_scale(scale):
 def letter_to_int(letter):
     alpha = list('abcdefghijklmnopqrstuvwxyz')
     return alpha.index(letter) + 1
+
 
 def int_to_letter(int):
     alpha = list('abcdefghijklmnopqrstuvwxyz')
@@ -148,7 +149,6 @@ def get_local_offset(parent, child):
     child_wm = get_dag_path(child).inclusiveMatrix()
     return child_wm * parent_wm.inverse()
 # END
-
 
 
 def matrix_constraint(driver, driven, mo=True, channels=['t', 'r', 's']):
@@ -634,18 +634,7 @@ def setup_splay(splay_mid_ctrl, splay_ctrl, drivens, meta_ctrls_offset=[], prefi
                    defaultValue=mid_attr_value, k=True)
         pm.addAttr(splay_ctrl, shortName=end_attr_name, longName=end_attr_name, min=0.0, max=1.0,
                    defaultValue=end_attr_value, k=True)
-        if not meta_ctrls_offset:
-            meta_ctrl = ctrl.Control(prefix=prefix + letter,
-                                     scale=scale,
-                                     trans_to=driven,
-                                     rot_to=driven,
-                                     shape='circle')
-            meta_ctrl.create()
-            meta_ctrl.freeze_transforms()
-            meta_ctrl.set_constraint(driven)
-            meta_ctrl_offset = meta_ctrl.get_offset()
-        else:
-            meta_ctrl_offset = meta_ctrls_offset[i]
+        meta_ctrl_offset = meta_ctrls_offset[i]
 
         # setup splay rotation
         mid_md = pm.createNode('multiplyDivide', n=prefix + letter + '_mid_md')

@@ -2,7 +2,7 @@
 library for creating shapes
 """
 import pymel.core as pm
-from journey.lib.utils.tools import convert_scale
+import journey.lib.utils.tools as tools
 
 
 def circle(scale, name=''):
@@ -94,7 +94,7 @@ def sphere(scale, name=''):
 
 
 def cube(scale, name=''):
-    scale = convert_scale(scale)
+    scale = tools.convert_scale(scale)
     cube1 = pm.curve(name=name, d=True,
                      p=[(0.5, 0.5, 0.5), (0.5, -0.5, 0.5),
                         (-0.5, -0.5, 0.5), (-0.5, 0.5, 0.5),
@@ -117,7 +117,7 @@ def cube(scale, name=''):
 
 
 def rectangle(scale, name=''):
-    scale = convert_scale(scale)
+    scale = tools.convert_scale(scale)
     rectangle1 = pm.curve(name=name, d=True,
                           p=[(0.7, 0.3, 0.5), (0.7, -0.3, 0.5),
                              (-0.7, -0.3, 0.5), (-0.7, 0.3, 0.5),
@@ -138,7 +138,7 @@ def rectangle(scale, name=''):
 
 
 def arrow3D(scale, name=''):
-    scale = convert_scale(scale)
+    scale = tools.convert_scale(scale)
     arrow1 = pm.curve(name=name, d=True,
                       p=[(0, 0, -1.75), (0.75, 0, -0.75), (0.4, 0, -0.75),
                          (0.4, 0, 0), (-0.4, 0, 0), (-0.4, 0, -0.75),
@@ -153,7 +153,7 @@ def arrow3D(scale, name=''):
 
 
 def master(scale, name=''):
-    scale = convert_scale(scale)
+    scale = tools.convert_scale(scale)
     master1 = pm.curve(name='master', d=1,
                        p=[(-5.472546, 0, 1.778139), (-5.472546, 0, -1.778137),
                           (-4.655226, 0, -3.382219), (-3.38222, 0, -4.655226),
@@ -218,7 +218,7 @@ def settings(scale, name=''):
 
 
 def offset(scale, name=''):
-    scale = convert_scale(scale)
+    scale = tools.convert_scale(scale)
     offset1 = pm.curve(name=name, d=1,
                        p=[(-5.472546, 0, 1.778139), (-5.472546, 0, -1.778137),
                           (-4.655226, 0, -3.382219), (-3.38222, 0, -4.655226),

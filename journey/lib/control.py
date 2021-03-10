@@ -5,12 +5,10 @@ TODO: update imports for cleaner look
 """
 
 import pymel.core as pm
-import journey.lib.utils.shapes as shapes
 import journey.lib.utils.tools as tools
-from journey.lib.utils.tools import lock_channels
+import journey.lib.utils.shapes as shapes
 import journey.lib.utils.color as color
 from maya.cmds import DeleteHistory
-
 reload(tools)
 reload(shapes)
 
@@ -55,7 +53,6 @@ class Control:
 
     def set_shape(self, shape):
         if self.get_ctrl():
-            self.scale
             exec ("return_shape = shapes.{0}(self.scale, self.prefix + '1_ctrl')".format(shape))
             pm.delete(pm.parentConstraint(self.get_ctrl(), return_shape))
             for shape in pm.PyNode(self.get_ctrl()).getShapes():
@@ -93,7 +90,7 @@ class Control:
             [pm.setAttr(s + '.ovc', clr_key) for s in self.ctrl_object.getShapes()]
 
     def set_channels(self, channels):
-        attr = lock_channels(self.ctrl_object, channels)
+        attr = tools.lock_channels(self.ctrl_object, channels)
         return attr
 
     def set_translation(self, *args):
@@ -183,7 +180,6 @@ class Control:
         DeleteHistory()
         tools.lock_channels(self.get_offset(), channels=channels)
         tools.lock_channels(self.get_ctrl(), channels=channels)
-
 
     def get_ctrl(self, *args):
         return self.ctrl_object
