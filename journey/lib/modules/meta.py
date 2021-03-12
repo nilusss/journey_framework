@@ -23,6 +23,7 @@ class Meta(lo.Module):
     def __init__(self,
                  driven,
                  splay_up_pos='',
+                 parent='',
                  prefix='new',
                  scale=1.0,
                  base_rig=None
@@ -31,6 +32,7 @@ class Meta(lo.Module):
 
         self.driven = driven
         self.splay_up_pos = splay_up_pos
+        self.parent = parent
         self.prefix = prefix
         self.scale = scale
         self.base_rig = base_rig
@@ -40,7 +42,7 @@ class Meta(lo.Module):
         super(Meta, self).create_structure()
 
         splay_mid_ctrl = ctrl.Control(prefix=self.prefix + 'SplayMidA',
-                                      scale=self.scale,
+                                      scale=self.scale * 1.2,
                                       trans_to=self.splay_up_pos,
                                       parent=self.controls_grp,
                                       shape='diamond')
@@ -48,7 +50,7 @@ class Meta(lo.Module):
         splay_mid_ctrl.create()
 
         splay_ctrl = ctrl.Control(prefix=self.prefix + 'SplayA',
-                                  scale=self.scale,
+                                  scale=self.scale * 1.2,
                                   trans_to=self.splay_up_pos,
                                   parent=self.controls_grp,
                                   shape='diamond')
@@ -77,7 +79,6 @@ class Meta(lo.Module):
         for i, driven in enumerate(self.driven):
             prefix = tools.split_at(driven, '_', 2)
             letter = tools.int_to_letter(i).capitalize()
-            letter = tools.int_to_letter(i).capitalize()
             buffer = pm.createNode('transform', n=prefix + '_buffer_grp')
             buffer_offset = pm.createNode('transform', n=prefix + '_buffer_offset_grp')
             pm.parent(buffer, buffer_offset)
@@ -99,4 +100,10 @@ class Meta(lo.Module):
 
         tools.setup_splay(splay_mid_ctrl.get_ctrl(), splay_ctrl.get_ctrl(), self.driven,
                           meta_ctrls_offset=self.meta_ctrls_offset, prefix=self.prefix, scale=self.scale)
+
+        if self.parent:
+            if pm.objExists(self.parent):
+                meta_ss = space.SpaceSwitcherLogic(self.parent, self.controls_grp, split=False)
+                meta_ss.setup_switcher()
+                meta_ss.set_space(self.parent)
 

@@ -16,6 +16,7 @@ class SpaceSwitcherLogic(object):
     def __init__(self,
                  drivers,
                  driven,
+                 split=False,
                  channels=['t', 'r'],
                  base_rig=None):
         """First driver in drivers list will be set to default space
@@ -29,6 +30,7 @@ class SpaceSwitcherLogic(object):
         self.drivers = drivers
         self.driven = driven
         self.driven_offset = pm.listRelatives(self.driven, parent=True)[0]
+        self.split = split
         self.prefix = tools.split_at(self.driven, '_', 2)
         self.channels = channels
         self.base_rig = base_rig
@@ -54,47 +56,89 @@ class SpaceSwitcherLogic(object):
         except pm.MayaAttributeError:
             pm.addAttr(self.driven, longName='pspace', nn='PARENT SPACE',
                        at="enum", en='=======')
-            pm.addAttr(self.driven, shortName='space', longName='space',
-                       at="enum", enumName=drivers_nicename, keyable=False)
-            pm.setAttr(self.driven + '.space', edit=True, channelBox=True)
             pm.setAttr(self.driven + '.pspace', edit=True, channelBox=True)
+            if self.split:
+                pm.addAttr(self.driven, shortName='spacer', longName='spaceRotate',
+                           at="enum", enumName=drivers_nicename, keyable=False)
+                pm.setAttr(self.driven + '.spacer', edit=True, channelBox=True)
+                pm.addAttr(self.driven, shortName='spacet', longName='spaceTranslate',
+                           at="enum", enumName=drivers_nicename, keyable=False)
+                pm.setAttr(self.driven + '.spacet', edit=True, channelBox=True)
+            else:
+                pm.addAttr(self.driven, shortName='space', longName='space',
+                           at="enum", enumName=drivers_nicename, keyable=False)
+                pm.setAttr(self.driven + '.space', edit=True, channelBox=True)
 
-        # create necessary nodes for the space switching
-        # create two choice nodes for the driver matrix and offset matrix
-        self.space_offset_choice = pm.createNode('choice', n=self.prefix + '_space_offset_choice')
-        self.space_choice = pm.createNode('choice', n=self.prefix + '_space_choice')
+        if self.split:
+            for k in ['t', 'r']:
+                # create necessary nodes for the space switching
+                # create two choice nodes for the driver matrix and offset matrix
+                self.space_offset_choice = pm.createNode('choice', n=self.prefix + '_space_offset_choice' + k)
+                self.space_choice = pm.createNode('choice', n=self.prefix + '_space_choice' + k)
 
-        #create multmatrix and decomposematrix to get the position of selected space
-        space_mm = pm.createNode('multMatrix', n=self.prefix + '_space_mm')
-        space_dm = pm.createNode('decomposeMatrix', n=self.prefix + '_space_dm')
+                # create multmatrix and decomposematrix to get the position of selected space
+                space_mm = pm.createNode('multMatrix', n=self.prefix + '_space_mm' + k)
+                space_dm = pm.createNode('decomposeMatrix', n=self.prefix + '_space_dm' + k)
 
-        # create buffer node
+                # setup initial connections between nodes
+                for driver in world_space.name().split() + self.drivers:
+                    local_offset = tools.get_local_offset(pm.PyNode(driver).name(),
+                                                          pm.PyNode(self.driven).name())
+                    idx = tools.get_next_free_multi_index(self.space_choice + '.input', 0)
+                    offset_matrix = pm.createNode('multMatrix', n=self.prefix + driver + '_offset_matrix' + k)
 
+                    pm.connectAttr(offset_matrix + '.matrixSum', self.space_offset_choice + '.input[{}]'.format(idx),
+                                   force=True)
+                    pm.setAttr(offset_matrix + '.matrixIn[{}]'.format(idx),
+                               [local_offset(i, j) for i in range(4) for j in range(4)])
+                    pm.connectAttr(driver + '.worldMatrix', self.space_choice + '.input[{}]'.format(idx), force=True)
 
-        # setup initial connections between nodes
-        for driver in world_space.name().split() + self.drivers:
-            local_offset = tools.get_local_offset(pm.PyNode(driver).name(),
-                                                  pm.PyNode(self.driven).name())
-            idx = tools.get_next_free_multi_index(self.space_choice + '.input', 0)
-            offset_matrix = pm.createNode('multMatrix', n=self.prefix + driver +'_offset_matrix')
+                pm.connectAttr(self.space_choice + '.output', space_mm + '.matrixIn[1]')
+                driven_parent = pm.listRelatives(self.driven, parent=True)[0]
+                driven_buffer = pm.listRelatives(self.driven, parent=True)[0]
+                pm.connectAttr(driven_parent + '.parentInverseMatrix[0]', space_mm + '.matrixIn[2]')
+                pm.connectAttr(space_mm + '.matrixSum', space_dm + '.inputMatrix')
+                pm.connectAttr(space_dm + '.o' + k, self.driven_offset + '.' + k)
+                # setup controller selection to choice node selector
+                pm.connectAttr(self.driven + '.space' + k, self.space_offset_choice + '.selector')
+                pm.connectAttr(self.driven + '.space' + k, self.space_choice + '.selector')
 
-            pm.connectAttr(offset_matrix + '.matrixSum', self.space_offset_choice + '.input[{}]'.format(idx), force=True)
-            pm.setAttr(offset_matrix + '.matrixIn[{}]'.format(idx),
-                       [local_offset(i, j) for i in range(4) for j in range(4)])
-            pm.connectAttr(driver + '.worldMatrix', self.space_choice + '.input[{}]'.format(idx), force=True)
+                pm.connectAttr(self.space_offset_choice + '.output', space_mm + '.matrixIn[0]')
 
-        pm.connectAttr(self.space_choice + '.output', space_mm + '.matrixIn[1]')
-        driven_parent = pm.listRelatives(self.driven, parent=True)[0]
-        driven_buffer = pm.listRelatives(self.driven, parent=True)[0]
-        pm.connectAttr(driven_parent + '.parentInverseMatrix[0]', space_mm + '.matrixIn[2]')
-        pm.connectAttr(space_mm + '.matrixSum', space_dm + '.inputMatrix')
-        for m in self.channels:
-            pm.connectAttr(space_dm + '.o' + m, self.driven_offset + '.' + m)
-        # setup controller selection to choice node selector
-        pm.connectAttr(self.driven + '.space', self.space_offset_choice + '.selector')
-        pm.connectAttr(self.driven + '.space', self.space_choice + '.selector')
+        else:
+            # create necessary nodes for the space switching
+            # create two choice nodes for the driver matrix and offset matrix
+            self.space_offset_choice = pm.createNode('choice', n=self.prefix + '_space_offset_choice')
+            self.space_choice = pm.createNode('choice', n=self.prefix + '_space_choice')
 
-        pm.connectAttr(self.space_offset_choice + '.output', space_mm + '.matrixIn[0]')
+            # create multmatrix and decomposematrix to get the position of selected space
+            space_mm = pm.createNode('multMatrix', n=self.prefix + '_space_mm')
+            space_dm = pm.createNode('decomposeMatrix', n=self.prefix + '_space_dm')
+
+            # setup initial connections between nodes
+            for driver in world_space.name().split() + self.drivers:
+                local_offset = tools.get_local_offset(pm.PyNode(driver).name(),
+                                                      pm.PyNode(self.driven).name())
+                idx = tools.get_next_free_multi_index(self.space_choice + '.input', 0)
+                offset_matrix = pm.createNode('multMatrix', n=self.prefix + driver +'_offset_matrix')
+
+                pm.connectAttr(offset_matrix + '.matrixSum', self.space_offset_choice + '.input[{}]'.format(idx), force=True)
+                pm.setAttr(offset_matrix + '.matrixIn[{}]'.format(idx),
+                           [local_offset(i, j) for i in range(4) for j in range(4)])
+                pm.connectAttr(driver + '.worldMatrix', self.space_choice + '.input[{}]'.format(idx), force=True)
+
+            pm.connectAttr(self.space_choice + '.output', space_mm + '.matrixIn[1]')
+            driven_parent = pm.listRelatives(self.driven, parent=True)[0]
+            driven_buffer = pm.listRelatives(self.driven, parent=True)[0]
+            pm.connectAttr(driven_parent + '.parentInverseMatrix[0]', space_mm + '.matrixIn[2]')
+            pm.connectAttr(space_mm + '.matrixSum', space_dm + '.inputMatrix')
+            for m in self.channels:
+                pm.connectAttr(space_dm + '.o' + m, self.driven_offset + '.' + m)
+            # setup controller selection to choice node selector
+            pm.connectAttr(self.driven + '.space', self.space_offset_choice + '.selector')
+            pm.connectAttr(self.driven + '.space', self.space_choice + '.selector')
+
+            pm.connectAttr(self.space_offset_choice + '.output', space_mm + '.matrixIn[0]')
 
     def add_space(self, drivers):
         drivers = tools.list_check(drivers)
@@ -119,4 +163,8 @@ class SpaceSwitcherLogic(object):
             pm.connectAttr(driver + '.worldMatrix', self.space_choice + '.input[{}]'.format(idx), force=True)
 
     def set_space(self, space):
-        pm.setAttr(self.driven + '.space', tools.split_at(space, '_', 2))
+        if self.split:
+            pm.setAttr(self.driven + '.spacet', tools.split_at(space, '_', 2))
+            pm.setAttr(self.driven + '.spacer', tools.split_at(space, '_', 2))
+        else:
+            pm.setAttr(self.driven + '.space', tools.split_at(space, '_', 2))

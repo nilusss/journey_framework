@@ -31,6 +31,7 @@ class Finger(lo.Module):
                  splay=True,
                  splay_up_pos='',
                  incl_last_child=False,
+                 parent='',
                  prefix='new',
                  scale=1.0,
                  base_rig=None
@@ -42,6 +43,7 @@ class Finger(lo.Module):
         self.splay = splay
         self.splay_up_pos = splay_up_pos
         self.incl_last_child = incl_last_child
+        self.parent = parent
         self.prefix = prefix
         self.scale = scale
         self.base_rig = base_rig
@@ -49,34 +51,6 @@ class Finger(lo.Module):
     def create(self, *args):
         # create module from parent class
         super(Finger, self).create_structure()
-
-        splay_mid_ctrl = ctrl.Control(prefix=self.prefix + 'SplayMidA',
-                                      scale=self.scale,
-                                      trans_to=self.splay_up_pos,
-                                      parent=self.controls_grp,
-                                      shape='diamond')
-
-        splay_mid_ctrl.create()
-
-        splay_ctrl = ctrl.Control(prefix=self.prefix + 'SplayA',
-                                  scale=self.scale,
-                                  trans_to=self.splay_up_pos,
-                                  parent=self.controls_grp,
-                                  shape='diamond')
-
-        splay_ctrl.create()
-
-        # splay mid and splay end controllers
-        pm.delete(pm.parentConstraint(self.driven[0], self.driven[-1], splay_mid_ctrl.get_offset(), st=['x']))
-        pm.delete(pm.parentConstraint(self.driven[-1], splay_ctrl.get_offset(), st=['x']))
-
-        #splay_mid_ctrl.freeze_transforms()
-        #splay_ctrl.freeze_transforms()
-
-        pm.addAttr(splay_mid_ctrl.get_ctrl(), shortName='splaymid', longName='SplayMid', nn='SPLAY Mid',
-                   at="enum", keyable=False, en="=======")
-        pm.addAttr(splay_ctrl.get_ctrl(), shortName='splay', longName='Splay', nn='SPLAY',
-                   at="enum", keyable=False, en="=======")
 
         self.meta_f_ctrls_offset = []
         self.meta_f_ctrls = []
@@ -93,7 +67,6 @@ class Finger(lo.Module):
             # pm.makeIdentity(buffer, apply=True)
             # DeleteHistory()
 
-
             meta_ctrl = ctrl.Control(prefix=prefix,
                                      scale=self.scale,
                                      trans_to=driven,
@@ -101,9 +74,7 @@ class Finger(lo.Module):
                                      parent=buffer,
                                      shape='circle')
             meta_ctrl.create()
-            #meta_ctrl.freeze_transforms()
             meta_ctrl.set_constraint(driven)
-            #pm.parent(meta_ctrl.get_offset(), self.controls_grp)
 
             self.meta_f_ctrls_offset.append(meta_ctrl.get_offset())
             self.meta_f_ctrls.append(meta_ctrl.get_ctrl())
@@ -135,5 +106,34 @@ class Finger(lo.Module):
                 pm.parent(finger_fk.get_offset(), self.controls_grp)
 
         if self.splay:
+            splay_mid_ctrl = ctrl.Control(prefix=self.prefix + 'SplayMidA',
+                                          scale=self.scale * 1.2,
+                                          trans_to=self.splay_up_pos,
+                                          parent=self.controls_grp,
+                                          shape='diamond')
+            splay_mid_ctrl.create()
+
+            splay_ctrl = ctrl.Control(prefix=self.prefix + 'SplayA',
+                                      scale=self.scale * 1.2,
+                                      trans_to=self.splay_up_pos,
+                                      parent=self.controls_grp,
+                                      shape='diamond')
+            splay_ctrl.create()
+
+            # splay mid and splay end controllers
+            pm.delete(pm.parentConstraint(self.driven[0], self.driven[-1], splay_mid_ctrl.get_offset(), st=['x']))
+            pm.delete(pm.parentConstraint(self.driven[-1], splay_ctrl.get_offset(), st=['x']))
+
+            pm.addAttr(splay_mid_ctrl.get_ctrl(), shortName='splaymid', longName='SplayMid', nn='SPLAY Mid',
+                       at="enum", keyable=False, en="=======")
+            pm.addAttr(splay_ctrl.get_ctrl(), shortName='splay', longName='Splay', nn='SPLAY',
+                       at="enum", keyable=False, en="=======")
+
             tools.setup_splay(splay_mid_ctrl.get_ctrl(), splay_ctrl.get_ctrl(), self.driven,
                               meta_ctrls_offset=self.meta_f_ctrls_offset, prefix=self.prefix, scale=self.scale)
+
+        if self.parent:
+            if pm.objExists(self.parent):
+                finger_ss = space.SpaceSwitcherLogic(self.parent, self.controls_grp, split=False)
+                finger_ss.setup_switcher()
+                finger_ss.set_space(self.parent)

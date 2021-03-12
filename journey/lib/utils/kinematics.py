@@ -260,6 +260,7 @@ class Spline:
                  driven,
                  preserve_vol=True,
                  rot_to=True,
+                 rot_shape=True,
                  parent=True,
                  shape='circle',
                  channels=['s', 'v'],
@@ -271,6 +272,7 @@ class Spline:
         self.driven = driven
         self.preserve_vol = preserve_vol
         self.rot_to = rot_to
+        self.rot_shape = rot_shape
         self.parent = parent
         self.shape = shape
         self.channels = channels
@@ -296,6 +298,7 @@ class Spline:
                                             scale=self.scale,
                                             trans_to=self.start_bind_jnt,
                                             rot_to=start_rot_jnt,
+                                            rot_shape=self.rot_shape,
                                             shape='rectangle')
         self.start_bind_ctrl.create()
         self.start_bind_ctrl.set_constraint(self.start_bind_jnt)
@@ -304,6 +307,7 @@ class Spline:
                                           scale=self.scale,
                                           trans_to=self.end_bind_jnt,
                                           rot_to=end_rot_jnt,
+                                          rot_shape=self.rot_shape,
                                           shape='rectangle')
         self.end_bind_ctrl.create()
         self.end_bind_ctrl.set_constraint(self.end_bind_jnt)

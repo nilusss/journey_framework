@@ -61,6 +61,7 @@ class Control:
                 pm.parent(shape, self.get_ctrl(), s=True, r=True)
             pm.delete(return_shape)
             self.set_color()
+            self.set_rotation()
         else:
             # exec("return_shape = shapes.{0}({1}, {2})".format(self.shape, self.scale, self.prefix + '_ctrl'))
             exec("return_shape = shapes.{0}(self.scale, self.prefix + '_ctrl')".format(shape))
@@ -103,6 +104,7 @@ class Control:
         if pm.objExists(self.rot_to):
             if not self.rot_shape:
                 ctrl_shapes = self.ctrl_object.getShapes()
+                print ctrl_shapes
                 loc = pm.spaceLocator()
                 for shape in ctrl_shapes:
                     pm.parent(shape, loc, relative=1, shape=1)
@@ -113,7 +115,7 @@ class Control:
                 pm.setAttr(loc + ".tz", 0)
                 pm.makeIdentity(loc, apply=True, r=True, t=True)
                 for shape in ctrl_shapes:
-                    pm.parent(shape, self.ctrl_object[0], relative=1, shape=1)
+                    pm.parent(shape, self.ctrl_object, relative=1, shape=1)
                 pm.delete(loc)
             else:
                 pm.delete(pm.orientConstraint(self.rot_to, self.ctrl_offset))
