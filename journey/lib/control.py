@@ -143,12 +143,19 @@ class Control:
 
         pm.scale(self.scale, self.scale, self.scale,)
         pm.makeIdentity(piv_ctrl, apply=True, t=1, r=1, s=1, n=0)
-        pm.DeleteHistory(piv_ctrl)
+        DeleteHistory(piv_ctrl)
 
         pm.delete(pm.parentConstraint(self.get_ctrl(), piv_ctrl))
         pm.parent(piv_ctrl, self.get_ctrl())
 
-        pm.connectAttr(piv_ctrl)
+        tools.lock_channels(piv_ctrl, channels=['r', 's'])
+
+        pm.addAttr(self.get_ctrl(), longName='MOVABLEPIVOT', nn='HAS MOVABLE PIVOT',
+                   at="enum", en='=======')
+        pm.setAttr(self.get_ctrl() + '.MOVABLEPIVOT', e=True, channelBox=True)
+
+        pm.connectAttr(piv_ctrl + '.t', self.get_ctrl() + '.rotatePivot')
+        pm.connectAttr(piv_ctrl + '.t', self.get_ctrl() + '.scalePivot')
 
     def set_pivot(self, node):
         get_piv = pm.xform(node, piv=True, q=True, ws=True)

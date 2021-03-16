@@ -5,6 +5,7 @@ various tools for the framework
 import pymel.core as pm
 from pymel.all import mel
 import maya.OpenMaya as om
+from maya.cmds import ReverseCurve
 # import journey.lib.control as ctrl
 
 
@@ -481,39 +482,60 @@ def joint_on_curve(curve, prefix='new', parent=False, radius=0.5):
 
     return joint_list
 
-    # amount = float(amount)
-    # spacing = pm.getAttr(curve + '.spans') / float(amount + 1)
-    # joint_list = []
-    #
-    # pos = spacing
-    #
-    # for i in range(int(amount + 1)):
-    #     if i != 0 or amount:
-    #         li = i
-    #         # create motion path curve
-    #         m_curve = pm.duplicate(curve, rr=True)[0]
-    #         # duplicate start joint to get same attributes on all the joints
-    #         curve_joint = pm.joint()
-    #         pm.parent(curve_joint, world=True)
-    #         joint_list.append(curve_joint)
-    #
-    #         # append the joint to the motion path and move it down the curve
-    #         m_path = pm.pathAnimation(curve_joint, su=pos, curve=m_curve, follow=False)
-    #         u_value = pm.listConnections(curve_joint, type='motionPath')[0] + '.u'
-    #
-    #         # breaking the connection with mel
-    #         mel.eval("source channelBoxCommand; CBdeleteConnection \"%s\"" % u_value)
-    #         # delete motion path and curve
-    #         pm.delete(u_value, m_curve)
-    #
-    #         # freeze transforms and reparent the joints
-    #         pm.makeIdentity(joint_list, apply=True)
-    #         if li > 0 and parent:
-    #             pm.parent(joint_list[li], joint_list[li - 1])
-    #
-    #         pos += spacing
-    #
-    # return joint_list, spacing
+
+def check_curves_order(first_crv, secnd_crv):
+    cv = pm.getAttr(secnd_crv + '.spans')
+    upper_cv1 = pm.xform(first_crv + '.cv[0]', q=True, translation=True, ws=True)
+    # lower_cv1 = pm.xform(secnd_crv + '.cv[0]', q=True, translation=True, ws=True)
+    lower_cv2 = pm.xform(secnd_crv + '.cv[{}]'.format(cv), q=True, translation=True, ws=True)
+
+    # cv1_deltax = lower_cv1[0] - upper_cv1[0]
+    # cv1_deltay = lower_cv1[1] - upper_cv1[1]
+    # cv1_deltaz = lower_cv1[2] - upper_cv1[2]
+
+    cv2_deltax = lower_cv2[0] - upper_cv1[0]
+    cv2_deltay = lower_cv2[1] - upper_cv1[1]
+    cv2_deltaz = lower_cv2[2] - upper_cv1[2]
+
+    if cv2_deltax + cv2_deltay + cv2_deltaz == 0.0:
+        pm.select(secnd_crv)
+        ReverseCurve()
+        pm.select(None)
+    return secnd_crv
+
+
+def create_lowres_crv(highres_curve):
+    # create low res lower curves
+    lowres_curve = pm.duplicate(highres_curve, name=highres_curve.replace('crv', 'lowres_crv'))[0]
+    pm.displaySmoothness(lowres_curve, divisionsU=3, divisionsV=3, pointsWire=16)
+    pm.rebuildCurve(lowres_curve, degree=3, endKnots=True, spans=2, keepRange=1, replaceOriginal=True,
+                    rebuildType=0)
+    # eyelid_low_res_curve.curve.set("%s_%s_low" % (self.side_prefix, self.up_down_prefix))
+
+    # lower_lowres_curve = pm.listRelatives(eyelid_low_res_curve, shapes=True)[0]
+    # self.set_shape_node_color(lower_lowres_curve.getShape(), (0, 0, 1))
+    lowres_curve.centerPivots()
+
+    return lowres_curve
+
+
+def loc_on_curve(loc_list, curve):
+    curve = pm.PyNode(curve)
+    # connect the locators to the high res curve
+    for loc in loc_list:
+        npoc = pm.createNode("nearestPointOnCurve", name=loc + "npoc")
+        position = loc.getTranslation(space="world")
+        curve.getShape().worldSpace >> npoc.inputCurve
+        npoc.inPosition.set(position)
+
+        u = npoc.parameter.get()
+
+        pci_node = pm.createNode("pointOnCurveInfo", name=loc.name().replace("locator", "PCI"))
+        curve.getShape().worldSpace >> pci_node.inputCurve
+        pci_node.parameter.set(u)
+        pci_node.position >> loc.translate
+
+        pm.delete(npoc)
 
 
 def insert_joints(start, end, amount, trans_first=False, first=False, both=False):

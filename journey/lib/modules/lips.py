@@ -6,6 +6,8 @@ https://vimeo.com/66583205
 
 NOTE: inherit set_base and set_prefix from Module class
 NOTE: When creating upper and lower curves untick: Conform to smooth mesh preview and set to 1 linear
+
+TODO: update create function so it works with being deserialized
 """
 import pymel.core as pm
 import journey.lib.control as ctrl
@@ -17,11 +19,11 @@ reload(lo)
 import journey.lib.layout as lo
 
 
-class Eyelid(lo.Module):
+class Lips(lo.Module):
     def __init__(self,
                  upper_crv,
                  lower_crv,
-                 eye_joint,
+                 center_joint,
                  joint_radius=0.4,
                  prefix='new',
                  scale=1.0,
@@ -32,7 +34,7 @@ class Eyelid(lo.Module):
 
         self.upper_crv = upper_crv
         self.lower_crv = lower_crv
-        self.eye_joint = eye_joint
+        self.eye_joint = center_joint
         self.joint_radius = joint_radius
         self.prefix = prefix
         self.scale = scale
@@ -51,7 +53,9 @@ class Eyelid(lo.Module):
         self.helper_groups = []
         self.lid_affector = ''
         # create module from parent class
-        super(Eyelid, self).create_structure()
+        super(Lips, self).create_structure()
+
+        self.lower_crv = tools.check_curves_order(self.upper_crv, self.lower_crv)
 
         upper_joints = tools.joint_on_curve(self.upper_crv, prefix=self.prefix+'Upper',
                                             parent=False, radius=self.joint_radius)
