@@ -89,27 +89,16 @@ class Eyebrow(lo.Module):
         # create low res curves with controllers
         upper_lowres_curve = tools.create_lowres_crv(self.upper_crv)
 
-        # # apply wire deformer to high res curves
-        # wire1 = pm.wire(self.upper_crv, groupWithBase=False, envelope=1, crossingEffect=0, localInfluence=0,
-        #                 wire=upper_lowres_curve.name())[0]
-
         # create control joints for low res curve
         c_upper, c_joint_upper = self.create_control_joints(upper_lowres_curve)
         pm.skinCluster(c_joint_upper, upper_lowres_curve, toSelectedBones=True)
 
         # constrain the inbetween helper groups to the 4 main controllers
         # on the edges and top and top bottom of the eye
-        # print self.constrain_controllers
-        # print self.helper_groups
-        # print self.main_controllers
         tools.matrix_blend(self.constrain_controllers[0], self.helper_groups[0],
                            self.main_controllers[0].get_ctrl(), self.constrain_controllers[1], mo=True, blend_value=0.5)
         tools.matrix_blend(self.constrain_controllers[1], self.helper_groups[1],
                            self.main_controllers[0].get_ctrl(), self.constrain_controllers[2], mo=True)
-        # tools.matrix_blend(self.constrain_controllers[0], self.helper_groups[2],
-        #                    self.main_controllers[0].get_ctrl(), self.constrain_controllers[3], mo=True)
-        # tools.matrix_blend(self.constrain_controllers[3], self.helper_groups[3],
-        #                    self.main_controllers[0].get_ctrl(), self.constrain_controllers[2], mo=True)
 
         # parent controllers to control group
         for c in c_upper:
@@ -124,66 +113,9 @@ class Eyebrow(lo.Module):
         pm.delete(pm.pointConstraint(self.eye_joint, self.main_offset))
         pm.parent(self.main_offset, self.controls_grp)
         pm.parent(self.main_controllers[0].get_offset(), self.main_offset)
-
-        # # add blink and blink height attr
-        # for i, controller in enumerate(self.main_controllers):
-        #     if i == 0:
-        #         pm.addAttr(controller.get_ctrl(), shortName='blinkH', longName='BlinkHeight',
-        #                    defaultValue=0.9, minValue=0.0, maxValue=1.0, k=1)
-        #     pm.addAttr(controller.get_ctrl(), shortName='blink', longName='Blink',
-        #                defaultValue=0, minValue=0.0, maxValue=1.0, k=1)
-        #
-        # # setup blink height
-        # blink_height_crv = pm.duplicate(upper_lowres_curve, name=self.prefix + "_blink_height_crv")[0]
-        # blink_height_bs = pm.blendShape(lower_lowres_curve, upper_lowres_curve, blink_height_crv,
-        #                                 name=self.prefix + "_blink_height_shapes")[0]
-        # pm.connectAttr(self.main_controllers[0].get_ctrl() + ".BlinkHeight",
-        #                blink_height_bs.name() + '.' + lower_lowres_curve.name())
-        #
-        # reverse_node = pm.createNode("reverse", name=self.prefix + "_blink_reverse")
-        # pm.connectAttr(self.main_controllers[0].get_ctrl() + ".BlinkHeight", "%s.inputX" % reverse_node.name())
-        # pm.connectAttr(reverse_node + ".outputX",
-        #                blink_height_bs.name() + '.' + upper_lowres_curve.name())
-        #
-        # # setup the blink
-        # blink_curve_upper = pm.duplicate(self.upper_crv, name=self.prefix + "_upper_blink_curve")[0]
-        # blink_curve_lower = pm.duplicate(self.lower_crv, name=self.prefix + "_lower_blink_curve")[0]
-        #
-        # self.main_controllers[0].get_ctrl().blinkH.set(0)
-        # up_blink_wire_deformer = pm.wire(blink_curve_upper, groupWithBase=False, envelope=1,
-        #                                  crossingEffect=0, localInfluence=0,  wire=blink_height_crv.name())[0]
-        # self.main_controllers[0].get_ctrl().blinkH.set(1)
-        # low_blink_wire_deformer = pm.wire(blink_curve_lower, groupWithBase=False, envelope=1,
-        #                                   crossingEffect=0, localInfluence=0, wire=blink_height_crv.name())[0]
-        # self.main_controllers[0].get_ctrl().blinkH.set(0.9)
-        #
-        # up_blink_wire_deformer.setWireScale(0, 0)
-        # low_blink_wire_deformer.setWireScale(0, 0)
-        #
-        # blink_up_blend_shape = pm.blendShape(blink_curve_upper, self.upper_crv,
-        #                                      name=self.prefix + "_up_blink_shapes")[0]
-        # blink_down_blend_shape = pm.blendShape(blink_curve_lower, self.lower_crv,
-        #                                        name=self.prefix + "_down_blink_shapes")[0]
-        #
-        # pm.connectAttr(self.main_controllers[0].get_ctrl() + ".blink",
-        #                blink_up_blend_shape + '.' + blink_curve_upper.name())
-        # pm.connectAttr(self.main_controllers[1].get_ctrl() + ".blink",
-        #                blink_down_blend_shape + '.' + blink_curve_lower.name())
-        #
-        # # make eye controller/joint affect eyelid controls
-        # if pm.objExists(self.eye_joint):
-        #     self.set_lid_affector(self.eye_joint)
-        #
-        # parent curves to rig module parts group
         pm.parent(self.upper_crv, upper_lowres_curve, self.parts_grp)
 
-        # # parent wires
-        # wire1base = pm.listConnections(wire1 + '.baseWire', s=True, d=False)
-        # wire2base = pm.listConnections(wire2 + '.baseWire', s=True, d=False)
-        # up_blink_wire_deformerbase = pm.listConnections(up_blink_wire_deformer + '.baseWire', s=True, d=False)
-        # low_blink_wire_deformerbase = pm.listConnections(low_blink_wire_deformer + '.baseWire', s=True, d=False)
-        # pm.parent(wire1base, wire2base, up_blink_wire_deformerbase,
-        #           low_blink_wire_deformerbase, self.parts_grp)
+        return self
 
     def create_control_joints(self, curve, lower=False):
         control_joints = []

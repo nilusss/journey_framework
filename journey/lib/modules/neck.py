@@ -27,6 +27,7 @@ import journey.lib.layout as lo
 class Neck(lo.Module):
     def __init__(self,
                  driven,
+                 spaces=[],
                  stretch=True,
                  prefix='new',
                  scale=1.0,
@@ -35,6 +36,9 @@ class Neck(lo.Module):
         self.CLASS_NAME = self.__class__.__name__
 
         self.driven = driven
+        self.spaces = spaces
+        if self.spaces:
+            self.spaces = tools.list_check(spaces)
         self.stretch = stretch
         self.prefix = prefix
         self.scale = scale
@@ -48,19 +52,36 @@ class Neck(lo.Module):
         if self.offset_joint:
             pm.delete(pm.parentConstraint(self.offset_joint, self.joints_offset_grp, mo=0))
 
-        spline = kine.Spline(self.driven, rot_to=True, rot_shape=False, preserve_vol=False, prefix=self.prefix,
+        ik_chain = tools.joint_duplicate(joint_chain=self.driven, joint_type='IK', offset_grp=self.joints_offset_grp)
+        spline = kine.Spline(ik_chain, rot_to=True, rot_shape=False, preserve_vol=False, prefix=self.prefix,
                              scale=self.scale, rig_module=self.get_instance())
         spline.create()
-        # spline.end_bind_ctrl.set_shape_scale(scale=[1, 0.7, 1])
-        # spline.start_bind_ctrl.set_shape_scale(scale=[1.1, 0.7, 1.1])
+
+        spline.end_bind_ctrl.set_shape_scale(scale=[1, 0.7, 1])
+        spline.start_bind_ctrl.set_shape_scale(scale=[1.1, 0.7, 1.1])
         spline.twist()
         pm.select(None)
         spline.end_bind_ctrl.set_shape('cube')
-
+        spline.start_bind_ctrl.set_shape('circleY')
         if self.stretch:
             spline.stretch()
 
-        head_ss = space.SpaceSwitcherLogic(spline.start_bind_ctrl.get_ctrl(), spline.end_bind_ctrl.get_ctrl(),
-                                           split=True)
+        # constrain joints to the result joints
+        del ik_chain[-1]
+        ik_chain.append(spline.end_bind_jnt)
+        ik_chain[0] = spline.start_bind_jnt
+        for i in range(len(self.driven)):
+            tools.matrix_constraint(ik_chain[i], self.driven[i], mo=True, channels=['t', 'r'])
+
+        head_ss = space.SpaceSwitcherLogic([spline.start_bind_ctrl.get_ctrl()] + self.spaces, spline.end_bind_ctrl.get_ctrl(),
+                                           split=True, base_rig=self.base_rig)
         head_ss.setup_switcher()
         head_ss.set_space(spline.start_bind_ctrl.get_ctrl())
+
+        if self.spaces:
+            neck_ss = space.SpaceSwitcherLogic(self.spaces, spline.start_bind_ctrl.get_ctrl(),
+                                               split=True, base_rig=self.base_rig)
+            neck_ss.setup_switcher()
+            neck_ss.set_space(self.spaces[0])
+
+        return self

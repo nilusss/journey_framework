@@ -36,12 +36,47 @@ def letter_to_int(letter):
 
 def int_to_letter(int):
     alpha = list('abcdefghijklmnopqrstuvwxyz')
-    return alpha[int]
+    return alpha[int].capitalize()
 
 
 def split_at(s, c, n):
     words = s.split(c)
     return c.join(words[:n])
+
+
+def xyz_to_vector3d(alpha):
+    vector3d = None
+    if alpha == 'x':
+        vector3d = [1.0, 0.0, 0.0]
+    elif alpha == 'y':
+        vector3d = [0.0, 1.0, 0.0]
+    elif alpha == 'z':
+        vector3d = [0.0, 0.0, 1.0]
+    elif alpha == '-x':
+        vector3d = [-1.0, 0.0, 0.0]
+    elif alpha == '-y':
+        vector3d = [0.0, -1.0, 0.0]
+    elif alpha == '-z':
+        vector3d = [0.0, 0.0, -1.0]
+    else:
+        print("Can\'t convert to vector3d")
+    return vector3d
+
+
+def rename_shape(transform):
+    """Find shapes in transform and rename to transform name +Shape
+    """
+    transform = list_check(transform)
+    for transform in transform:
+        child_shapes = pm.listRelatives(transform, shapes=True, c=True)
+        if child_shapes:
+            child_shapes = list_check(child_shapes)
+            for shape in child_shapes:
+                new_shape = pm.rename(shape, transform+'Shape')
+            pm.select(None)
+        else:
+            print "No children in transform: " + transform
+    return transform
 
 
 def parent_rm(child, module, module_grp):
@@ -313,8 +348,12 @@ def joint_duplicate(joint_chain, joint_type, offset_grp='', skip=0):
         skip = 1
 
     for i, j in enumerate(joint_chain[::skip]):
+        if "result_jnt" in j:
+            last_string = "result_jnt"
+        else:
+            last_string = '_jnt'
         chain.extend(pm.duplicate(j, parentOnly=True,
-                                  n=j.replace('result_jnt', joint_type + '_jnt')))
+                                  n=j.replace(last_string, joint_type + '_jnt')))
         try:
             pm.parent(chain[i], offset_grp)
         except pm.MayaNodeError:

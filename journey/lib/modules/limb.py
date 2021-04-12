@@ -3,16 +3,20 @@ module containing limp setup.
 create a three chain setup
 
 NOTE: inherit set_base and set_prefix from Module class
+TODO: Add space switching to module
+TODO: Move upper joint to follow parent module/parent joint
 """
 import pymel.core as pm
 import maya.OpenMaya as om
 import journey.lib.control as ctrl
 import journey.lib.utils.tools as tools
 import journey.lib.utils.kinematics as kine
+import journey.lib.space_switcher as space
 import journey.lib.layout as lo
 reload(ctrl)
 reload(tools)
 reload(kine)
+reload(space)
 reload(lo)
 import journey.lib.layout as lo
 
@@ -20,18 +24,21 @@ import journey.lib.layout as lo
 class Limb(lo.Module):
     def __init__(self,
                  driven,
+                 spaces=[],
+                 parent_joint='',
                  stretch=True,
-                 joint_radius=0.4,
                  prefix='new',
                  scale=1.0,
                  base_rig=None,
+                 do_spaces_in_limb=True
                  ):
 
         self.CLASS_NAME = self.__class__.__name__
 
         self.driven = driven
+        self.spaces = spaces
+        self.parent_joint = parent_joint
         self.stretch = stretch
-        self.joint_radius = joint_radius
         self.prefix = prefix
         self.scale = scale
         self.base_rig = base_rig
@@ -43,8 +50,9 @@ class Limb(lo.Module):
         self.blend_ctrl = ''
         self.arm_ik = ''
         self.arm_fk = ''
-        # init Module class
-        #super(Limb, self).__init__(self.prefix, self.base_rig)
+        self.do_spaces_in_limb = do_spaces_in_limb
+        if self.spaces:
+            self.spaces = tools.list_check(spaces)
 
     def create(self, *args):
         # create module from parent class
@@ -81,13 +89,11 @@ class Limb(lo.Module):
 
         get_offset = (end_joint_vec - lower_joint_vec).length()
 
-        #_pos = get_offset.normal() * get_offset.length() + end_joint_vec
-
         # TODO: position the blend controller using vector position instead of pm.move
         if self.prefix.startswith('l_'):
             pm.move(self.blend_ctrl.get_offset(), get_offset, 0, -get_offset, r=True)
         elif self.prefix.startswith('r_'):
-            pm.move(self.blend_ctrl.get_offset(), get_offset, 0, get_offset, r=True)
+            pm.move(self.blend_ctrl.get_offset(), -get_offset, 0, -get_offset, r=True)
 
         # setup blending between joint chains and driven. blend_ctrl gets .blend attr added in function
         if self.blend_ctrl:
@@ -106,5 +112,23 @@ class Limb(lo.Module):
         pm.connectAttr(self.blend_ctrl.get_ctrl() + '.blend', self.arm_ik.crv_offset + '.v')
 
         self.blend_ctrl.get_ctrl().attr('blend').set(1)
+        # print self.arm_fk.fk_dict.values()[0].get_offset()
+        if self.do_spaces_in_limb:
+            if self.parent_joint:
+                if self.stretch:
+                    tools.matrix_constraint(self.parent_joint, self.arm_ik.upper_null, mo=True)
+                tools.matrix_constraint(self.parent_joint, self.ik_joints[0], mo=True)
+                tools.matrix_constraint(self.parent_joint, self.arm_fk.fk_dict.values()[0].get_offset(), mo=True)
+            if self.spaces:
+                ss_pole = space.SpaceSwitcherLogic(self.arm_ik.ik_ctrl.get_ctrl(), self.arm_ik.pv_ctrl.get_ctrl(),
+                                                   base_rig=self.base_rig)
+                ss_pole.setup_switcher()
 
+                ss_ik = space.SpaceSwitcherLogic(self.spaces, self.arm_ik.ik_ctrl.get_ctrl(),
+                                                 base_rig=self.base_rig)
+                ss_ik.setup_switcher()
 
+                # ss_fk = space.SpaceSwitcherLogic(self.spaces, self.arm_fk.fk_dict.values()[0].get_ctrl(),
+                #                                  base_rig=self.base_rig)
+                # ss_fk.setup_switcher()
+        return self

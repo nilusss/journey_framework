@@ -2,6 +2,7 @@
 module for making curve controls
 
 TODO: update imports for cleaner look
+TODO: fix set_shape to orient correctly - fix cycles
 """
 
 import pymel.core as pm
@@ -103,8 +104,8 @@ class Control:
         # rotate control
         if pm.objExists(self.rot_to):
             if not self.rot_shape:
+                pm.cycleCheck(e=0)
                 ctrl_shapes = self.ctrl_object.getShapes()
-                print ctrl_shapes
                 loc = pm.spaceLocator()
                 for shape in ctrl_shapes:
                     pm.parent(shape, loc, relative=1, shape=1)
@@ -117,6 +118,7 @@ class Control:
                 for shape in ctrl_shapes:
                     pm.parent(shape, self.ctrl_object, relative=1, shape=1)
                 pm.delete(loc)
+                pm.cycleCheck(e=1)
             else:
                 pm.delete(pm.orientConstraint(self.rot_to, self.ctrl_offset))
 
@@ -137,6 +139,8 @@ class Control:
         self.set_rotation()
 
         self.set_channels(self.channels)
+
+        return self
 
     def movable_pivot(self, *args):
         piv_ctrl = pm.spaceLocator(n=self.prefix + '_piv_ctrl')
@@ -166,18 +170,8 @@ class Control:
         """Multiplies current scale value
         """
         scale = tools.convert_scale(scale)
-        print scale
         for shape in self.get_shapes():
             pm.scale(pm.select(shape + '.cv[:]'), scale[0], scale[1], scale[2], relative=True)
-        # try:
-        #     tools.unlock_channels(self.get_offset(), channels=['s'])
-        #     tools.unlock_channels(self.get_ctrl(), channels=['s'])
-        #     pm.makeIdentity(self.get_offset(), apply=True, s=1)
-        #     pm.DeleteHistory()
-        #     tools.lock_channels(self.get_offset(), channels=['s'])
-        #     tools.lock_channels(self.get_ctrl(), channels=['s'])
-        # except RuntimeError as e:
-        #     print str(e)
 
     def set_constraint(self, driven, mo=True, channels=['t', 'r', 's']):
         tools.matrix_constraint(self.get_ctrl(), driven, mo=mo, channels=channels)

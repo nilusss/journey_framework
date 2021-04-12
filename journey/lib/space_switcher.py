@@ -3,8 +3,6 @@ module for setting up space switching on objects
 
 setup_switcher - creates space switching with the given arguments
 add_space - adds a new space for the existing space switching system
-
-TODO: split translate and rotate parent space in two different attributes if bool argument added
 """
 
 import pymel.core as pm
@@ -41,7 +39,7 @@ class SpaceSwitcherLogic(object):
             world_space = pm.createNode('transform', n="WORLD_SPACE_NODE")
             try:
                 # exec('return_module = {}.{}'.format(module.prefix, module_grp))
-                pm.parent(world_space, self.base_rig.rig_grp)
+                pm.parent(world_space, self.base_rig.offset_ctrl.get_ctrl())
             except AttributeError as e:
                 print("No rig to parent under: \"{}\" ".format(str(e)))
         else:
@@ -71,6 +69,7 @@ class SpaceSwitcherLogic(object):
 
         if self.split:
             for k in ['t', 'r']:
+
                 # create necessary nodes for the space switching
                 # create two choice nodes for the driver matrix and offset matrix
                 self.space_offset_choice = pm.createNode('choice', n=self.prefix + '_space_offset_choice' + k)

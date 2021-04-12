@@ -44,7 +44,9 @@ def circleZ(scale, name=''):
 def diamond(scale, name=''):
     shape1 = pm.circle(name=name, constructionHistory=False,
                        normal=[1, 0, 0], degree=1,
-                       sections=4, radius=scale)[0]
+                       sections=4, radius=1.5)[0]
+    pm.scale(shape1, scale, scale, scale, absolute=True)
+    pm.makeIdentity(shape1, apply=True, s=1)
     pm.select(clear=True)
 
     return shape1
@@ -53,7 +55,9 @@ def diamond(scale, name=''):
 def diamondX(scale, name=''):
     shape1 = pm.circle(name=name, constructionHistory=False,
                        normal=[1, 0, 0], degree=1,
-                       sections=4, radius=scale)[0]
+                       sections=4, radius=1.5)[0]
+    pm.scale(shape1, scale, scale, scale, absolute=True)
+    pm.makeIdentity(shape1, apply=True, s=1)
     pm.select(clear=True)
 
     return shape1
@@ -62,7 +66,9 @@ def diamondX(scale, name=''):
 def diamondY(scale, name=''):
     shape1 = pm.circle(name=name, constructionHistory=False,
                        normal=[0, 1, 0], degree=1,
-                       sections=4, radius=scale)[0]
+                       sections=4, radius=1.5)[0]
+    pm.scale(shape1, scale, scale, scale, absolute=True)
+    pm.makeIdentity(shape1, apply=True, s=1)
     pm.select(clear=True)
 
     return shape1
@@ -71,7 +77,9 @@ def diamondY(scale, name=''):
 def diamondZ(scale, name=''):
     shape1 = pm.circle(name=name, constructionHistory=False,
                        normal=[0, 0, 1], degree=1,
-                       sections=4, radius=scale)[0]
+                       sections=4, radius=1.5)[0]
+    pm.scale(shape1, scale, scale, scale, absolute=True)
+    pm.makeIdentity(shape1, apply=True, s=1)
     pm.select(clear=True)
 
     return shape1
@@ -130,6 +138,8 @@ def rectangle(scale, name=''):
                              (-0.7, -0.3, 0.5), (-0.7, 0.3, 0.5),
                              (-0.7, 0.3, -0.5)])
 
+    pm.scale(rectangle1, 1.453, 1.453, 1.453, absolute=True)
+    pm.makeIdentity(rectangle1, apply=True, s=1, n=0, pn=1)
     pm.scale(rectangle1, scale[0], scale[1], scale[2], absolute=True)
     pm.makeIdentity(rectangle1, apply=True, s=1)
     pm.select(clear=True)
@@ -154,7 +164,7 @@ def arrow3D(scale, name=''):
 
 def master(scale, name=''):
     scale = tools.convert_scale(scale)
-    master1 = pm.curve(name='master', d=1,
+    master1 = pm.curve(name=name, d=1,
                        p=[(-5.472546, 0, 1.778139), (-5.472546, 0, -1.778137),
                           (-4.655226, 0, -3.382219), (-3.38222, 0, -4.655226),
                           (-1.778138, 0, -5.472547), (1.778139, 0, -5.472547),
@@ -190,12 +200,12 @@ def master(scale, name=''):
         pm.parent(shape.getShape(), master1, s=True, r=True)
         pm.delete(shape)
 
-    pm.scale(master1, 0.1, 0.1, 0.1, absolute=True)
+    pm.scale(master1, 0.17, 0.17, 0.17, absolute=True)
     pm.makeIdentity(master1, apply=True, s=1, n=0, pn=1)
 
     pm.scale(master1, scale[0], scale[1], scale[2], absolute=True)
     pm.makeIdentity(master1, apply=True, s=1, n=0, pn=1)
-    pm.select(clear=True)
+    pm.select(None)
 
     return master1
 
@@ -230,7 +240,7 @@ def offset(scale, name=''):
                           (-3.382219, 0, 4.655227), (-4.655226, 0, 3.382221),
                           (-5.472546, 0, 1.778139)])
 
-    pm.scale(offset1, 0.1, 0.1, 0.1, absolute=True)
+    pm.scale(offset1, 0.18, 0.18, 0.18, absolute=True)
     pm.makeIdentity(offset1, apply=True, s=1)
     pm.scale(offset1, scale[0], scale[1], scale[2], absolute=True)
     pm.makeIdentity(offset1, apply=True, s=1)
@@ -285,12 +295,16 @@ def line_sphere(scale, name=''):
                                (0, 0, 9.3333333333333321),
                                (0, 0, 7)])
     pm.getAttr(line_sphere1 + ".cv[3].zValue")
-    sphere_attach = sphere(scale, name)
+    sphere_attach = sphere(1, name)
     pm.setAttr(sphere_attach + ".tz", 8.335)
     pm.makeIdentity(sphere_attach, apply=True, t=True)
     pm.parent(sphere_attach.getShapes(),
               line_sphere1, relative=1, shape=1)
     pm.delete(sphere_attach)
+    pm.scale(name, 0.25, 0.25, 0.25)
+    pm.makeIdentity(name, apply=True, s=True)
+    pm.scale(name, scale, scale, scale)
+    pm.makeIdentity(name, apply=True, s=True)
     pm.select(clear=True)
 
     return line_sphere1

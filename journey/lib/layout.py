@@ -17,7 +17,7 @@ import journey.lib.serialization as se
 
 class Base:
     """class for building top rig structure
-    TODO: automatically look for object in scene created with class - see if it's and instance
+    TODO: automatically look for object in scene created with class - see if it's an instance
     """
 
     def __init__(self,
@@ -71,7 +71,7 @@ class Base:
         self.global_ctrl.create()
 
         self.offset_ctrl = ctrl.Control(prefix='offset',
-                                        scale=self.scale * self.global_ctrl_scale - 2,
+                                        scale=self.scale * self.global_ctrl_scale * 0.7,
                                         parent=self.rig_grp,
                                         shape='offset',
                                         channels=['s', 'v'])
@@ -87,7 +87,7 @@ class Base:
         # mc.hide(self.jointsGrp)
         self.modules_grp = pm.group(n='modules_grp', em=1, p=self.rig_grp)
 
-        tools.matrix_constraint(self.offset_ctrl.ctrl_object, self.joints_grp, mo=True)
+        #tools.matrix_constraint(self.offset_ctrl.ctrl_object, self.joints_grp, mo=True)
         tools.matrix_constraint(self.offset_ctrl.ctrl_object, self.modules_grp, mo=True)
 
         self.extra_grp = pm.group(n='extra_grp', em=1, p=self.rig_grp)
@@ -112,8 +112,8 @@ class Module(se.Serialize):
         self.base_rig = base_rig
 
     def create_structure(self, *args):
-        print self.prefix
-        if pm.ls(self.prefix + '_*'):
+        get_duplicate = pm.ls(self.prefix + '_*')
+        if pm.objExists(self.prefix + '_module_grp'):
             pm.error("Module already exists with prefix: " + self.prefix)
         # create initial rig structure groups
         self.top_grp = pm.group(name=self.prefix + '_module_grp', em=1)

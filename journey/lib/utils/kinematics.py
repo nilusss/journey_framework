@@ -82,6 +82,9 @@ class FK:
 
 
 class IK:
+    """
+    TODO: check that the distance tool output matches the .tx value of middle and end joint else scaling wont work
+    """
     def __init__(self,
                  driven=[],
                  rot_to=True,
@@ -112,11 +115,11 @@ class IK:
         self.ik_ctrl.create()
         tools.parent_rm(self.ik_ctrl.get_offset(), self.rig_module, 'controls_grp')
 
-        ik_hdl_grp = pm.createNode("transform", n=self.prefix + 'HdlOffset_grp')
+        self.ik_hdl_grp = pm.createNode("transform", n=self.prefix + 'HdlOffset_grp')
         self.ik_hdl = pm.ikHandle(n=self.prefix + 'Main_hdl', sol='ikSCsolver',
                                   sj=self.driven[0], ee=self.driven[-1])[0]
-        pm.parent(self.ik_hdl, ik_hdl_grp)
-        pm.parent(ik_hdl_grp, self.ik_ctrl.get_ctrl())
+        pm.parent(self.ik_hdl, self.ik_hdl_grp)
+        pm.parent(self.ik_hdl_grp, self.ik_ctrl.get_ctrl())
         tools.matrix_constraint(self.ik_ctrl.get_ctrl(), self.driven[-1], mo=True, channels=['r'])
 
     def pole_vector(self, *args):
@@ -138,6 +141,7 @@ class IK:
         tools.parent_rm(self.pv_ctrl.get_offset(), self.rig_module, 'controls_grp')
 
         self.pv_loc = tools.get_pole_vec_pos(self.driven)
+
         self.pv_loc.attr('visibility').set(0)
         pm.rename(self.pv_loc, self.prefix + 'poleVec_loc')
 
@@ -145,9 +149,10 @@ class IK:
         pm.delete(pm.parentConstraint(self.pv_loc, self.pv_ctrl.get_offset()))
 
         tools.matrix_constraint(self.pv_ctrl.get_ctrl(), self.pv_loc, mo=True)
+
         pm.poleVectorConstraint(self.pv_ctrl.get_ctrl(), self.ik_hdl)
         self.crv_offset, crv, = tools.create_line(start=self.driven[tools.get_mid_joint(self.driven)], end=self.pv_ctrl.get_ctrl(),
-                                             prefix=self.prefix)
+                                                  prefix=self.prefix)
         tools.parent_rm(self.crv_offset, self.rig_module, 'controls_grp')
 
     def stretch(self, *args):
@@ -161,6 +166,7 @@ class IK:
 
         if not self.pv_ctrl.get_ctrl():
             self.pole_vector()
+
 
         # create IK options
         pm.addAttr(self.ik_ctrl.get_ctrl(), longName='IKOptions', nn='IK OPTIONS',
@@ -247,7 +253,6 @@ class IK:
         lo_dist_mdl.attr('input1').set(pm.getAttr(lo_def_dist + '.distance'))
         pm.connectAttr(lock_up_bta + '.output', up_dist_mdl + '.input2')
         pm.connectAttr(lock_lo_bta + '.output', lo_dist_mdl + '.input2')
-
         pm.connectAttr(up_dist_mdl + '.output', mid_joint + '.tx')
         pm.connectAttr(lo_dist_mdl + '.output', end_joint + '.tx')
 
@@ -288,6 +293,7 @@ class Spline:
                                          name=self.driven[-1].replace('ik_jnt', 'IKBind_jnt'))[0]
 
         pm.parent(self.end_bind_jnt, w=True)
+        pm.parent(self.start_bind_jnt, w=True)
         start_rot_jnt = ''
         end_rot_jnt = ''
         if self.rot_to:
@@ -311,6 +317,8 @@ class Spline:
                                           shape='rectangle')
         self.end_bind_ctrl.create()
         self.end_bind_ctrl.set_constraint(self.end_bind_jnt)
+        tools.parent_rm(self.end_bind_ctrl.get_offset(), self.rig_module, 'controls_grp')
+        tools.parent_rm(self.start_bind_ctrl.get_offset(), self.rig_module, 'controls_grp')
 
         #pm.select(self.driven[0], self.driven[-1])
 
@@ -338,6 +346,11 @@ class Spline:
             'maximumInfluences': 2
         }
         scls = pm.skinCluster(influences, self.spine_crv, **kwargs)[0]
+
+        tools.parent_rm(self.ik_spline, self.rig_module, 'static_grp')
+        tools.parent_rm(self.spine_crv, self.rig_module, 'static_grp')
+        tools.parent_rm(self.end_bind_jnt, self.rig_module, 'joints_grp')
+        tools.parent_rm(self.start_bind_jnt, self.rig_module, 'joints_grp')
 
     def twist(self, *args):
         # setup twisting for the ik spline
@@ -367,7 +380,7 @@ class Spline:
 
         # create proxy attributes and enable on/off stretch attr
         proxy_ctrl = pm.spaceLocator(self.prefix + 'proxy_ctrl')
-        proxy_ctrl.addAttr('Stretch', keyable=True, at='bool')
+        proxy_ctrl.addAttr('Stretch', keyable=True, at='bool', defaultValue=1)
 
         self.start_bind_ctrl.get_ctrl().addAttr('Stretch', usedAsProxy=True, keyable=True, at='bool')
         self.end_bind_ctrl.get_ctrl().addAttr('Stretch', usedAsProxy=True, keyable=True, at='bool')

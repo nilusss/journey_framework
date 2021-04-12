@@ -41,16 +41,20 @@ class Spine(lo.Module):
     def create(self):
         # create module from parent class
         super(Spine, self).create_structure()
-
         self.offset_joint = pm.listRelatives(self.driven[0], parent=True)
         if self.offset_joint:
             pm.delete(pm.parentConstraint(self.offset_joint, self.joints_offset_grp, mo=0))
 
-        spline = kine.Spline(self.driven, rot_to=False, preserve_vol=False, prefix=self.prefix,
+        ik_chain = tools.joint_duplicate(joint_chain=self.driven, joint_type='IK', offset_grp=self.joints_offset_grp)
+        spline = kine.Spline(ik_chain, rot_to=False, preserve_vol=False, prefix=self.prefix,
                              scale=self.scale, rig_module=self.get_instance())
         spline.create()
         spline.end_bind_ctrl.set_shape_scale(scale=[1, 0.7, 1])
         spline.start_bind_ctrl.set_shape_scale(scale=[1.1, 0.7, 1.1])
+
+        #tools.matrix_constraint(spline.end_bind_ctrl.get_ctrl(), self.driven[-1], channels=['r'], mo=True)
+        #tools.matrix_constraint(spline.start_bind_jnt, self.driven[0], channels=['r'], mo=True)
+
         spline.twist()
 
         if self.stretch:
@@ -64,6 +68,15 @@ class Spine(lo.Module):
                                       fk_spine.get_offset()))
 
         tools.matrix_constraint(fk_spine.get_ctrl(), spline.end_bind_ctrl.get_offset())
+
+        pm.parent(fk_spine.get_offset(), self.controls_grp)
+
+        # constrain joints to the result joints
+        del ik_chain[-1]
+        ik_chain.append(spline.end_bind_jnt)
+        ik_chain[0] = spline.start_bind_jnt
+        for i in range(len(self.driven)):
+            tools.matrix_constraint(ik_chain[i], self.driven[i], mo=True, channels=['t', 'r'])
 
         if self.com:
             com = ctrl.Control(prefix=self.prefix + 'COM',

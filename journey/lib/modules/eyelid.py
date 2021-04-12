@@ -206,6 +206,8 @@ class Eyelid(lo.Module):
         pm.parent(wire1base, wire2base, up_blink_wire_deformerbase,
                   low_blink_wire_deformerbase, self.parts_grp)
 
+        return self
+
     def create_control_joints(self, curve, lower=False):
         control_joints = []
         controllers = []

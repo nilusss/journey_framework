@@ -103,7 +103,7 @@ class Meta(lo.Module):
 
         if self.parent:
             if pm.objExists(self.parent):
-                meta_ss = space.SpaceSwitcherLogic(self.parent, self.controls_grp, split=False)
+                meta_ss = space.SpaceSwitcherLogic(self.parent, self.controls_grp, split=False, base_rig=self.base_rig)
                 meta_ss.setup_switcher()
                 meta_ss.set_space(self.parent)
 

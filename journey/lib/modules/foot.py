@@ -118,6 +118,7 @@ class Foot(lo.Module):
                 ball_fk_ctrl.create()
 
                 pm.parentConstraint(ball_fk_ctrl.get_ctrl(), ball_fk, mo=True)
+                tools.matrix_constraint(ankle_fk, ball_fk_ctrl.get_offset())
 
 
         # add attributes to the foot controller
