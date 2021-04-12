@@ -1,6 +1,7 @@
 """
 module containing different guide setups.
 TODO: constrain radius scale ctrl and other minor controllers when mirroring a module
+TODO: CONTROLLERS MADE WITH ctrl.Control needs 'channels=['v']'
 """
 import re
 import pymel.core as pm
@@ -57,7 +58,6 @@ class Guides(object):
         pm.setAttr(self.base_ctrl + ".hook_node", "_Grp", type='string')
         self.base_ctrl.attr('module_namespace').set(self.module_name)
         self.base_ctrl.attr('custom_name').set(self.prefix)
-        print self.parent
         self.base_ctrl.attr('parent_module').set(str(self.parent))
         self.base_ctrl.attr('space_switches').set(self.space_switches)
         self.base_ctrl.attr('radius_ctrl').set(self.radius_ctrl)
@@ -247,8 +247,10 @@ class Guides(object):
 
         hidden_guide_offset_grp = pm.createNode('transform',
                                                 n=self.module_name + '___' + dup_guide.prefix + "HIDOFFSET_GRP")
+
         if self.get_parent():
             tools.matrix_constraint(self.get_parent(), hidden_guide_offset_grp, mo=False)
+
         # pm.parent(dup_guide.base_ctrl, w=True)
         pm.parent(hidden_guide.base_ctrl, hidden_guide_offset_grp)
         for attr in 'trs':
@@ -267,22 +269,21 @@ class Guides(object):
 
         pm.parent(dup_mirror_offset_grp, dup_guide_mirror_grp)
         pm.makeIdentity(dup_mirror_offset_grp, s=True, apply=True)
+        pm.select(dup_mirror_offset_grp)
+        DeleteHistory()
+        pm.select(None)
 
         pm.parent(dup_guide.base_ctrl, dup_mirror_offset_grp)
 
         for og_ctrl, dup_ctrl in zip(self.controllers, hidden_guide.controllers):
-            tools.matrix_constraint(og_ctrl, dup_ctrl)
+            pm.parentConstraint(og_ctrl, dup_ctrl.getParent())
 
         for attr in 'trs':
             pm.connectAttr(hidden_guide.base_ctrl + '.' + attr, dup_guide.base_ctrl + '.' + attr)
+
         for hid_ctrl, dup_ctrl in zip(hidden_guide.controllers, dup_guide.controllers):
             for attr in 'trs':
-                try:
-                    pm.connectAttr(hid_ctrl + '.' + attr, dup_ctrl + '.' + attr)
-                except:
-                    pass
-        if dup_parent == self.get_parent():
-            pass
+                pm.connectAttr(hid_ctrl + '.' + attr, dup_ctrl + '.' + attr)
         pm.parent(dup_guide_mirror_grp, dup_parent)
 
         try:
@@ -291,7 +292,6 @@ class Guides(object):
         except:
             pass
         pm.select(self.base_ctrl)
-
 
     @staticmethod
     def cv_loc(ctrl_name, r=0.3):
@@ -528,7 +528,8 @@ class DrawFoot(Guides):
         toe_tip_loc = ctrl.Control(prefix=self.prefix + 'toe_loc',
                                    scale=0.3,
                                    parent=toe_loc,
-                                   shape='cube').create()
+                                   shape='cube',
+                                   channels=['v']).create()
 
         toe_offset.attr('tz').set(3)
         toe_tip_loc.get_offset().attr('ty').set(-0.5)
@@ -536,7 +537,8 @@ class DrawFoot(Guides):
         heel_loc = ctrl.Control(prefix=self.prefix + 'heel_loc',
                                 scale=0.3,
                                 parent=self.base_ctrl,
-                                shape='cube').create()
+                                shape='cube',
+                                channels=['v']).create()
         heel_loc.get_offset().attr('tz').set(-1.5)
         heel_loc.get_offset().attr('ty').set(-1.5)
         self.base_ctrl.attr('toe_loc').set(toe_tip_loc.get_ctrl())
@@ -565,8 +567,8 @@ class DrawFoot(Guides):
         ball_offset.attr('ty').set(-1)
         toe_offset.attr('ty').set(-1)
 
-        self.controllers.append(ball_loc)
-        self.controllers.append(toe_loc)
+        self.controllers.extend([ball_loc, toe_loc, toe_tip_loc.get_ctrl(), heel_loc.get_ctrl()])
+
         pm.select(None)
         self.do_parent_line()
         self.do_parent()
@@ -577,21 +579,11 @@ class DrawFoot(Guides):
                 self.base_ctrl.attr('ty').set(0)
                 self.base_ctrl.attr('tz').set(0)
                 self.driven_joints.pop(0)
-            # pm.delete(self.center_loc_ctrl)
-            #
-        # else:
-        #     self.center_loc_ctrl = pm.rename(self.center_loc_ctrl,
-        #                                      self.center_loc_ctrl.replace('_guide', 'Ankle_guide'))
-        #     self.center_joint = pm.rename(self.center_joint, self.center_joint.replace('_jnt', 'Ankle_jnt'))
+
         self.center_loc_ctrl = pm.rename(self.center_loc_ctrl,
                                          self.center_loc_ctrl.replace('_guide', 'Ankle_guide'))
         self.center_joint = pm.rename(self.center_joint, self.center_joint.replace('_jnt', 'Ankle_jnt'))
         self.get_module_joints()
-        # pm.parent(toe_tip_loc.get_offset(), toe_loc)
-        # pm.makeIdentity(toe_tip_loc, apply=True)
-        # DeleteHistory(toe_tip_loc)
-        # pm.makeIdentity(heel_loc, apply=True)
-        # DeleteHistory(heel_loc)
         pm.select(self.base_ctrl)
 
         return self
