@@ -3,8 +3,6 @@ module containing limp setup.
 create a three chain setup
 
 NOTE: inherit set_base and set_prefix from Module class
-TODO: Add space switching to module
-TODO: Move upper joint to follow parent module/parent joint
 """
 import pymel.core as pm
 import maya.OpenMaya as om

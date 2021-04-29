@@ -1,0 +1,140 @@
+# from journey.vendor.Qt import QtWidgets, QtGui, QtCore
+from PySide2 import QtWidgets, QtGui, QtCore
+from shiboken2 import wrapInstance
+import journey.lib.guides as guides
+import maya.OpenMayaUI as mui
+from functools import partial
+# import sip
+"""
+TODO: make dialog a dockable window
+"""
+
+
+
+def get_maya_window():
+    """
+    Return maya main window as a python object
+    """
+    ptr = mui.MQtUtil.mainWindow()  # prt = pointer
+    return wrapInstance(long(ptr), QtWidgets.QWidget)
+
+
+class JourneyUI(QtWidgets.QDialog):
+    def __init__(self, parent=get_maya_window()):
+        super(JourneyUI, self).__init__(parent)
+        # define empty variables
+        self.draw_classes = {}  # fetch all draw classes in guides modules
+        self.buttons = []  # list of all buttons created
+
+        self.setWindowTitle("Journey - Builder")
+        self.setWindowFlags(QtCore.Qt.Tool)
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)  # Delete window when it's closed to free resources
+
+        self.create_controls()
+        self.create_layout()
+        self.create_connections()
+
+    def create_controls(self):
+        """Create controls for the window"""
+        # get all draw classes from guides module to make corresponding buttons
+        self.draw_classes = dict([(name, cls) for name, cls in guides.__dict__.items()
+                                  if isinstance(cls, type) and "Draw" in name])
+
+        # draw button
+        self.draw_btn = QtWidgets.QPushButton("Draw module")
+
+        # create guide position radio buttons
+        self.radiobutton_01 = QtWidgets.QRadioButton("Left")
+        self.radiobutton_01.setChecked(True)
+        self.radiobutton_01.side = "l_"
+
+        self.radiobutton_02 = QtWidgets.QRadioButton("Center")
+        self.radiobutton_02.side = "c_"
+
+        self.radiobutton_03 = QtWidgets.QRadioButton("Right")
+        self.radiobutton_03.side = "r_"
+
+        # set prefix input field and corresponding label
+        self.line_edit = QtWidgets.QLineEdit("prefix")
+        self.prefix_label = QtWidgets.QLabel()
+        self.prefix_label.setText("Prefix")
+        self.prefix_label.setBuddy(self.line_edit)
+
+        # create list widget to select module to be used
+        self.list_wdg = QtWidgets.QListWidget()
+        self.list_wdg.addItems(self.draw_classes.keys())
+        self.list_wdg.setCurrentRow(0)
+        self.list_wdg.setMaximumHeight(300)
+
+        # set line edit prefix text
+        self.change_selection()
+
+        for cls in self.draw_classes:
+            # create "create" button for each module
+            btn = QtWidgets.QPushButton("Create " + str(cls).replace("Draw", "") + " Guides")
+            self.buttons.append(btn)
+
+    def create_layout(self):
+        """Layout all the controls in corresponding layout"""
+        radio_layout = QtWidgets.QHBoxLayout()
+        radio_layout.setContentsMargins(5, 5, 5, 5)
+        radio_layout.addWidget(self.radiobutton_01)
+        radio_layout.addWidget(self.radiobutton_02)
+        radio_layout.addWidget(self.radiobutton_03)
+
+        # create main layout
+        main_layout = QtWidgets.QVBoxLayout()
+        main_layout.setContentsMargins(10, 10, 10, 10)
+
+        main_layout.addWidget(self.draw_btn)
+        main_layout.addLayout(radio_layout)
+        main_layout.addWidget(self.prefix_label)
+        main_layout.addWidget(self.line_edit)
+        main_layout.addWidget(self.list_wdg)
+        # for btn in self.buttons:
+        #     main_layout.addWidget(btn)
+        main_layout.setSpacing(5)
+        main_layout.addStretch()
+
+        self.setLayout(main_layout)
+        print self.draw_classes
+        print self.buttons
+
+    def create_connections(self):
+        """Create signals and slots for buttons"""
+        self.list_wdg.itemSelectionChanged.connect(self.on_list_change_prefix)
+        self.draw_btn.clicked.connect(self.on_draw_pressed)
+
+    def draw_guide(self, guide_type, prefix):
+        exec ('guide = guides.{}(prefix=\'{}\')'.format(guide_type, prefix))
+        return guide.draw()
+
+    ###############
+    # SLOTS START #
+    ###############
+    def change_selection(self):
+        prefix = self.list_wdg.currentItem().text().replace('Draw', '')
+        self.line_edit.setText(prefix.lower())
+
+    def on_list_change_prefix(self):
+        self.change_selection()
+
+    def on_draw_pressed(self):
+        side_value = ''
+        for radio in [self.radiobutton_01, self.radiobutton_02, self.radiobutton_03]:
+            if radio.isChecked():
+                side_value = radio.side
+
+        print side_value
+        guide = self.list_wdg.currentItem().text()
+        prefix = self.line_edit.text()
+        self.draw_guide(guide, side_value + prefix)
+
+    #############
+    # SLOTS END #
+    #############
+
+
+if __name__ == "__main__":
+    d = JourneyUI()
+    d.show()

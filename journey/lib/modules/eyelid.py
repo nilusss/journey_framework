@@ -119,9 +119,6 @@ class Eyelid(lo.Module):
 
         # constrain the inbetween helper groups to the 4 main controllers
         # on the edges and top and top bottom of the eye
-        # print self.constrain_controllers
-        # print self.helper_groups
-        # print self.main_controllers
         tools.matrix_blend(self.constrain_controllers[0], self.helper_groups[0],
                            self.main_controllers[0].get_ctrl(), self.constrain_controllers[1], mo=True, blend_value=0.5)
         tools.matrix_blend(self.constrain_controllers[1], self.helper_groups[1],

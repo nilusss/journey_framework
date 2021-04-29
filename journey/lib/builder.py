@@ -1,5 +1,7 @@
 """
 module containing different guide setups.
+TODO: take parent module scale into account when scaling child modules
+TODO: Scaling guide joints causes the builder to crash - currently disabled guide joint scaling
 """
 import re
 import fnmatch
@@ -69,45 +71,119 @@ class Builder():
 
         reparent_to = []
         for module in get_modules:
+            self.single_joints = []
+            self.single_joints2 = []
             if 'HIDDEN' not in module.name():
                 p_joint = self.get_parent_joint(module)
                 print 'PARENT JOINT: ' + str(p_joint)
-                get_module_joints = module.getAttr('module_joints').split('#')
 
-                chain = tools.joint_duplicate(get_module_joints, '_result', self.base_rig.joints_grp)
-                # pm.makeIdentity(chain[0], apply=True)
-                n_chain = []
+                # split module_joints by '.' usually only used by meta and finger modules
+                get_module_joints = module.getAttr('module_joints').split('.')
+                get_module_joints = [x for x in get_module_joints if x]
+                print "MODULE JOINTS WITH . : " + str(get_module_joints)
+                if len(get_module_joints) > 1:
+                    pm.PyNode(module).attr('module_joints').set('')
+                    for chain in get_module_joints:
+                        print chain
+                        # split by # to get continuing chain if it excists
+                        chain = chain.split('#')
+                        print chain
 
-                for i, j in enumerate(chain):
-                    nice_name = j.split('___')[-1]
-                    j = pm.rename(j, nice_name)
-                    j.attr('overrideEnabled').set(0)
-                    j.attr('overrideDisplayType').set(0)
-                    n_chain.append(j)
-                    pm.select(None)
-                print n_chain
-                get_transform = n_chain[0].getParent()
-                print 'TRANSFORM IS: ' + get_transform
-                get_transform_parent = get_transform.getParent()
-                print get_transform_parent
-                if 'transform' in get_transform.name():
-                    print 'FOUND TRANSFORM'
-                    pm.makeIdentity(get_transform, s=True, apply=True)
-                    pm.parent(n_chain[0], get_transform_parent)
-                pm.makeIdentity(n_chain[0], r=True, apply=True)
-                pm.delete(pm.ls('transform*'))
+                        chain = tools.joint_duplicate(chain, '_result', self.base_rig.joints_grp)
+                        # pm.makeIdentity(chain[0], apply=True)
+                        n_chain = []
 
-                if p_joint:
-                    reparent_to.append(n_chain[0] + '-' + p_joint)
+                        for i, j in enumerate(chain):
+                            nice_name = j.split('___')[-1]
+                            j = pm.rename(j, nice_name)
+                            j.attr('overrideEnabled').set(0)
+                            j.attr('overrideDisplayType').set(0)
+                            n_chain.append(j)
+                            if i == 0:
+                                self.single_joints.append(j)
+                                try:
+                                    pm.addAttr(module, longName='single_joints', dataType='string')
+                                except:
+                                    pass
+                                value = module.getAttr('single_joints')
+                                if value:
+                                    module.attr('single_joints').set(value + '#' + j)
+                                else:
+                                    module.attr('single_joints').set(j)
+                            elif i == 1:
+                                self.single_joints2.append(j)
+                                try:
+                                    pm.addAttr(module, longName='single_joints2', dataType='string')
+                                except:
+                                    pass
+                                value = module.getAttr('single_joints2')
+                                if value:
+                                    module.attr('single_joints2').set(value + '#' + j)
+                                else:
+                                    module.attr('single_joints2').set(j)
+                            pm.select(None)
 
-                pm.PyNode(module).attr('module_joints').set('')
+                        print n_chain
+                        get_transform = n_chain[0].getParent()
+                        print 'TRANSFORM IS: ' + get_transform
+                        get_transform_parent = get_transform.getParent()
+                        print get_transform_parent
+                        if 'transform' in get_transform.name():
+                            print 'FOUND TRANSFORM'
+                            print get_transform.name()
+                            pm.makeIdentity(get_transform, s=True, apply=True)
+                            pm.parent(n_chain[0], get_transform_parent)
+                        pm.makeIdentity(n_chain[0], r=True, apply=True)
+                        pm.delete(pm.ls('transform*'))
 
-                for j in n_chain:
-                    value = pm.PyNode(module).getAttr('module_joints')
-                    if value:
-                        pm.PyNode(module).attr('module_joints').set(value + '#' + j)
-                    else:
-                        pm.PyNode(module).attr('module_joints').set(j)
+                        if p_joint:
+                            reparent_to.append(n_chain[0] + '-' + p_joint)
+
+                        for i, j in enumerate(n_chain):
+                            value = pm.PyNode(module).getAttr('module_joints')
+                            if i == 0:
+                                pm.PyNode(module).attr('module_joints').set(value + '.' + j)
+                            elif value:
+                                pm.PyNode(module).attr('module_joints').set(value + '#' + j)
+                            else:
+                                pm.PyNode(module).attr('module_joints').set(j)
+                else:
+                    get_module_joints = module.getAttr('module_joints').split('#')
+                    chain = tools.joint_duplicate(get_module_joints, '_result', self.base_rig.joints_grp)
+                    # pm.makeIdentity(chain[0], apply=True)
+                    n_chain = []
+
+                    for i, j in enumerate(chain):
+                        nice_name = j.split('___')[-1]
+                        j = pm.rename(j, nice_name)
+                        j.attr('overrideEnabled').set(0)
+                        j.attr('overrideDisplayType').set(0)
+                        n_chain.append(j)
+                        pm.select(None)
+                    print n_chain
+                    get_transform = n_chain[0].getParent()
+                    print 'TRANSFORM IS: ' + get_transform
+                    get_transform_parent = get_transform.getParent()
+                    print get_transform_parent
+                    if 'transform' in get_transform.name():
+                        print 'FOUND TRANSFORM'
+                        print get_transform.name()
+                        pm.makeIdentity(get_transform, s=True, apply=True)
+                        pm.parent(n_chain[0], get_transform_parent)
+                    pm.makeIdentity(n_chain[0], r=True, apply=True)
+                    pm.delete(pm.ls('transform*'))
+
+                    if p_joint:
+                        reparent_to.append(n_chain[0] + '-' + p_joint)
+
+                    pm.PyNode(module).attr('module_joints').set('')
+
+                    for j in n_chain:
+                        value = pm.PyNode(module).getAttr('module_joints')
+                        if value:
+                            pm.PyNode(module).attr('module_joints').set(value + '#' + j)
+                        else:
+                            pm.PyNode(module).attr('module_joints').set(j)
 
         for p in reparent_to:
             pm.parent(p.split('-')[0], p.split('-')[1])
@@ -131,15 +207,25 @@ class Builder():
             joints = module.getAttr('module_joints').split('#')
             spaces = module.getAttr('space_switches')
 
+            # get correct scaling from base_ctrl and parents
             scale = pm.PyNode(module.getAttr('radius_ctrl')).getAttr('ty')
+            base_scale = module.getAttr('sx')
+            sel = module.getAllParents()
+            scale_val = 1
+            for s in sel:
+                scale_val *= s.getAttr('sx')
+
+            scale_val *= base_scale
+            scale *= scale_val
+
             if spaces:
                 spaces = spaces.split('#')
             else:
-                joint = pm.listRelatives(joints[0], parent=True, type='joint')
+                joint = pm.listRelatives(joints[0].replace('.', ''), parent=True, type='joint')
                 if joint:
                     spaces = joint
             try:
-                parent_joint = pm.listRelatives(joints[0], parent=True, type='joint')[0]
+                parent_joint = pm.listRelatives(joints[0].replace('.', ''), parent=True, type='joint')[0]
             except:
                 parent_joint = None
 
@@ -153,14 +239,7 @@ class Builder():
                 pm_name = parent_module.name()
 
             if get_module == 'Arm':
-                # print '----------------'
-                # print prefix
-                # print joints[0]
-                # print joints[1::]
-                # print spaces
-                # print scale
-                # print self.base_rig
-                # print '----------------'
+
                 arm = mdls.arm.Arm(driven=joints[1::],
                                    clavicle=joints[0],
                                    spaces=spaces,
@@ -234,7 +313,32 @@ class Builder():
             if get_module == 'Lips':
                 pass
             if get_module == 'Meta':
-                pass
+                module.getAttr('splay_up_pos')
+                splay_up_pos = module.getAttr('splay_up_pos')  # define correct splay up position using locator
+                single_joints = module.getAttr('single_joints').split('#')
+                meta = mdls.meta.Meta(driven=single_joints,
+                                      splay_up_pos=splay_up_pos,
+                                      parent=parent_joint,
+                                      prefix=prefix,
+                                      scale=scale,
+                                      base_rig=self.base_rig)
+                meta.create()
+                # check if meta joints have fingers attached.
+                if module.getAttr('finger_joints'):
+                    #splay_up_pos = ''  # define correct splay up position using locator
+                    #finger_joints = module.getAttr('finger_joints').split('#')
+                    prefix = prefix.replace('meta', 'finger')
+                    single_joints2 = module.getAttr('single_joints2').split('#')
+                    meta_fingers = mdls.finger.Finger(driven=single_joints2,
+                                                      meta_ctrls=meta.meta_ctrls,
+                                                      splay=True,
+                                                      splay_up_pos=splay_up_pos,
+                                                      incl_last_child=False,
+                                                      parent=parent_joint,
+                                                      prefix=prefix,
+                                                      scale=scale,
+                                                      base_rig=self.base_rig)
+                    meta_fingers.create()
             if get_module == 'Neck':
                 neck = mdls.neck.Neck(driven=joints,
                                       spaces=spaces,
@@ -282,8 +386,13 @@ class Builder():
             raise Exception('Too many Master modules in scene. Build file should only have one')
         elif len(global_scale) == 1:
             pm.hide(global_scale[0])
+            scale = global_scale[0].getAttr('sx')
+
             radius = pm.ls('Master___*_radius_ctrl')[0]
             global_scale = radius.getAttr('ty')
+
+            global_scale *= scale
+
         else:
             global_scale = 35
         return global_scale

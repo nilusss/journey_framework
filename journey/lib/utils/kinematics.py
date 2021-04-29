@@ -1,7 +1,5 @@
 """
 module containing different class kinematics for fk, ik, spline.
-
-TODO: Clean up outliner
 """
 import pymel.core as pm
 import journey.lib.control as ctrl
@@ -135,7 +133,7 @@ class IK:
         pm.delete(temp_hdl)
 
         # create pv ctrl and pv constraint
-        self.pv_ctrl = ctrl.Control(prefix=self.prefix + 'PoleVec', scale=self.scale,
+        self.pv_ctrl = ctrl.Control(prefix=self.prefix + 'PoleVec', scale=self.scale * 0.7,
                                     shape='fancy_sphere', channels=['r', 's', 'v'])
         self.pv_ctrl.create()
         tools.parent_rm(self.pv_ctrl.get_offset(), self.rig_module, 'controls_grp')

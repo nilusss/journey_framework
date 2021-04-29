@@ -3,7 +3,6 @@ module containing foot setup.
 create a three chain setup
 
 NOTE: inherit set_base and set_prefix from Module class
-TODO: Foot ik controller parent constraint til foot module, remove parent constraint to IK Handle. Parent constraint ball locator to IK Handle Offset grp.
 TODO: parent constrain leg_end_joint to leg_endik_joint leg_endfk_jnt
 TODO: add toe tap by constraining toe IK
 TODO: SHOULD WORK, NEED MORE TESTING - module doesn't work correctly when parented to leg module. Leg end joint doesn't rotate when the ankle is lifted
@@ -21,7 +20,6 @@ reload(kine)
 reload(lo)
 reload(space)
 import journey.lib.layout as lo
-import pdb
 
 
 class Foot(lo.Module):

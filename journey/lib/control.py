@@ -1,7 +1,6 @@
 """
 module for making curve controls
 
-TODO: update imports for cleaner look
 TODO: fix set_shape to orient correctly - fix cycles
 """
 

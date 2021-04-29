@@ -5,7 +5,6 @@ Extending the json.JSONEncoder to support custom classes
 
 TODO: make code more readable.
 TODO: Test with other modules
-TODO: update imports for cleaner look
 """
 
 import json

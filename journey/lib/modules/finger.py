@@ -5,9 +5,8 @@ used for: Metacarpal (Fingers), Metatarsal (Toes)
 NOTE: inherit set_base and set_prefix from Module class
 NOTE: when attaching finger joints, only use the base joint of the finger and attach meta ctrl in the right order
 
-TODO: loop through every finger give a proxy controls controller with fk ik switch \
-TODO: \to put on every fk and ik controller for that specific finger
-"""
+TODO: loop through every finger give a proxy controls controller with fk ik switch to put on every fk and ik
+controller for that specific finger """
 import pymel.core as pm
 import maya.OpenMaya as om
 import journey.lib.control as ctrl
@@ -109,6 +108,7 @@ class Finger(lo.Module):
             splay_mid_ctrl = ctrl.Control(prefix=self.prefix + 'SplayMidA',
                                           scale=self.scale * 1.2,
                                           trans_to=self.splay_up_pos,
+                                          rot_to=self.splay_up_pos,
                                           parent=self.controls_grp,
                                           shape='diamond')
             splay_mid_ctrl.create()
@@ -116,13 +116,19 @@ class Finger(lo.Module):
             splay_ctrl = ctrl.Control(prefix=self.prefix + 'SplayA',
                                       scale=self.scale * 1.2,
                                       trans_to=self.splay_up_pos,
+                                      rot_to=self.splay_up_pos,
                                       parent=self.controls_grp,
                                       shape='diamond')
             splay_ctrl.create()
 
+            try:
+                pm.parent(self.splay_up_pos, self.parts_grp)
+            except:
+                pass
+
             # splay mid and splay end controllers
-            pm.delete(pm.parentConstraint(self.driven[0], self.driven[-1], splay_mid_ctrl.get_offset(), st=['x']))
-            pm.delete(pm.parentConstraint(self.driven[-1], splay_ctrl.get_offset(), st=['x']))
+            pm.delete(pm.parentConstraint(self.driven[0], self.driven[-1], splay_mid_ctrl.get_offset(), st=['y']))
+            pm.delete(pm.parentConstraint(self.driven[-1], splay_ctrl.get_offset(), st=['y']))
 
             pm.addAttr(splay_mid_ctrl.get_ctrl(), shortName='splaymid', longName='SplayMid', nn='SPLAY Mid',
                        at="enum", keyable=False, en="=======")
