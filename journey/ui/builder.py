@@ -3,6 +3,9 @@ from PySide2 import QtWidgets, QtGui, QtCore
 from shiboken2 import wrapInstance
 import journey.lib.guides as guides
 import maya.OpenMayaUI as mui
+import pymel.core as pm
+import maya.cmds as mc
+import traceback
 from functools import partial
 # import sip
 """
@@ -15,18 +18,20 @@ def get_maya_window():
     """
     Return maya main window as a python object
     """
-    ptr = mui.MQtUtil.mainWindow()  # prt = pointer
+    ptr = mui.MQtUtil.mainWindow()  # ptr = pointer
     return wrapInstance(long(ptr), QtWidgets.QWidget)
 
 
-class JourneyUI(QtWidgets.QDialog):
+class BuilderUI(QtWidgets.QDialog):
     def __init__(self, parent=get_maya_window()):
-        super(JourneyUI, self).__init__(parent)
+
+        super(BuilderUI, self).__init__(parent)
+
         # define empty variables
         self.draw_classes = {}  # fetch all draw classes in guides modules
         self.buttons = []  # list of all buttons created
 
-        self.setWindowTitle("Journey - Builder")
+        self.setWindowTitle("JOURNEY Builder")
         self.setWindowFlags(QtCore.Qt.Tool)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)  # Delete window when it's closed to free resources
 
@@ -106,8 +111,14 @@ class JourneyUI(QtWidgets.QDialog):
         self.draw_btn.clicked.connect(self.on_draw_pressed)
 
     def draw_guide(self, guide_type, prefix):
-        exec ('guide = guides.{}(prefix=\'{}\')'.format(guide_type, prefix))
-        return guide.draw()
+        try:
+            mc.undoInfo(openChunk=True, chunkName="drawguide")
+            exec ('guide = guides.{}(prefix=\'{}\').draw()'.format(guide_type, prefix))
+            return guide
+        except Exception as e:
+            raise e
+        finally:
+            mc.undoInfo(closeChunk=True, chunkName="drawguide")
 
     ###############
     # SLOTS START #
@@ -134,7 +145,12 @@ class JourneyUI(QtWidgets.QDialog):
     # SLOTS END #
     #############
 
+def show():
+    try:
+        d.close()
+    except:
+        pass
 
-if __name__ == "__main__":
-    d = JourneyUI()
+    d = BuilderUI()
     d.show()
+    return d
