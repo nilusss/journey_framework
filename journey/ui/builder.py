@@ -23,9 +23,11 @@ def get_maya_window():
 
 
 class BuilderUI(QtWidgets.QDialog):
-    def __init__(self, parent=get_maya_window()):
+    def __init__(self, parent):
 
         super(BuilderUI, self).__init__(parent)
+
+        self.parent_inst = parent
 
         # define empty variables
         self.draw_classes = {}  # fetch all draw classes in guides modules
@@ -91,19 +93,18 @@ class BuilderUI(QtWidgets.QDialog):
         main_layout = QtWidgets.QVBoxLayout()
         main_layout.setContentsMargins(10, 10, 10, 10)
 
-        main_layout.addWidget(self.draw_btn)
         main_layout.addLayout(radio_layout)
         main_layout.addWidget(self.prefix_label)
         main_layout.addWidget(self.line_edit)
         main_layout.addWidget(self.list_wdg)
+        main_layout.addWidget(self.draw_btn)
+
         # for btn in self.buttons:
         #     main_layout.addWidget(btn)
         main_layout.setSpacing(5)
         main_layout.addStretch()
 
         self.setLayout(main_layout)
-        print self.draw_classes
-        print self.buttons
 
     def create_connections(self):
         """Create signals and slots for buttons"""
@@ -119,6 +120,8 @@ class BuilderUI(QtWidgets.QDialog):
             raise e
         finally:
             mc.undoInfo(closeChunk=True, chunkName="drawguide")
+
+        
 
     ###############
     # SLOTS START #
@@ -136,21 +139,28 @@ class BuilderUI(QtWidgets.QDialog):
             if radio.isChecked():
                 side_value = radio.side
 
-        print side_value
         guide = self.list_wdg.currentItem().text()
         prefix = self.line_edit.text()
-        self.draw_guide(guide, side_value + prefix)
+        returned_guide = self.draw_guide(guide, side_value + prefix)
+        try:
+            print "IN"
+            guide_list_item = QtWidgets.QListWidgetItem()
+            guide_list_item.setData(0, returned_guide)
+            guide_list_item.setText(side_value + prefix)
+            self.parent_inst.list_wdg.addItem(guide_list_item)
+        except Exception as e:
+            print str(e)
 
     #############
     # SLOTS END #
     #############
 
-def show():
+def show(parent=get_maya_window()):
     try:
         d.close()
     except:
         pass
 
-    d = BuilderUI()
+    d = BuilderUI(parent=parent)
     d.show()
     return d

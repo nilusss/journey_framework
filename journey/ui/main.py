@@ -4,18 +4,31 @@ import journey.lib.guides as guides
 import maya.OpenMayaUI as mui
 import journey.ui.base_ws_control as bwsc
 import journey.ui.setup_tab as setup_tab
+import journey.ui.guides_tab as guides_tab
+import journey.presets as presets
+import journey.lib.serialization as se
 import pymel.core as pm
 import maya.cmds as mc
-import traceback
+import json
+import os
+import sys
 from functools import partial
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin, MayaQDockWidget
 from maya.OpenMayaUI import MQtUtil
 reload(guides)
+reload(se)
 reload(bwsc)
 reload(setup_tab)
+reload(guides_tab)
 """
 TODO: make dialog a dockable window
 """
+
+
+def value_is_valid(val):
+    if isinstance(val, QtGui.QPixmap):
+        return not val.isNull()
+    return True
 
 
 def get_maya_window():
@@ -25,11 +38,40 @@ def get_maya_window():
     ptr = mui.MQtUtil.mainWindow()  # ptr = pointer
     return wrapInstance(long(ptr), QtWidgets.QWidget)
 
+def restore(settings):
+    finfo = QtCore.QFileInfo(settings.fileName())
+    if finfo.exists() and finfo.isFile():
+        for w in QtWidgets.qApp.allWidgets():
+            mo = w.metaObject()
+            if w.objectName() and not w.objectName().startswith("qt_"):
+                settings.beginGroup(w.objectName())
+                for i in range( mo.propertyCount(), mo.propertyOffset()-1, -1):
+                    prop = mo.property(i)
+                    if prop.isWritable():
+                        name = prop.name()
+                        val = settings.value(name, w.property(name))
+                        if str(val).isdigit():
+                            val = int(val)
+                        w.setProperty(name, val)
+                settings.endGroup()
 
-class JourneyMainUI(QtWidgets.QWidget):
+def save(settings):
+    for w in QtWidgets.qApp.allWidgets():
+        mo = w.metaObject()
+        if w.objectName() and not w.objectName().startswith("qt_"):
+            settings.beginGroup(w.objectName())
+            for i in range(mo.propertyCount()):
+                prop = mo.property(i)
+                name = prop.name()
+                if prop.isWritable():
+                    settings.setValue(name, w.property(name))
+            settings.endGroup()
+
+
+class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
 
     LOAD_PRESET_FILTERS = "JSON (*.json)"
-    selected_preset_filter = "JSON (*.json)"
+    selected_load_preset_filter = "JSON (*.json)"
 
     UI_NAME = "JourneyMainUI"
     UI_TITLE = "JOURNEY"
@@ -76,6 +118,10 @@ class JourneyMainUI(QtWidgets.QWidget):
         self.create_connections()
         self.create_ws_control()
 
+        # self.settings = QtCore.QSettings("JourneyFramework", "JourneyFramework")
+        # print(self.settings.fileName())
+        # restore(self.settings)
+
     def create_menu(self):
         # Create a menubar
         self.main_menu = QtWidgets.QMenuBar(self)
@@ -86,12 +132,15 @@ class JourneyMainUI(QtWidgets.QWidget):
         self.load_preset_m = QtWidgets.QAction('Load Preset...', self)
         self.save_m = QtWidgets.QAction('Save', self)
         self.save_as_m = QtWidgets.QAction('Save As...', self)
+        self.restore_window_m = QtWidgets.QAction("Restore Window...", self)
 
         self.file_menu.addAction(self.new_m)
         self.file_menu.addAction(self.load_preset_m)
         self.file_menu.addSeparator()
         self.file_menu.addAction(self.save_m)
         self.file_menu.addAction(self.save_as_m)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self.restore_window_m)
 
         # Edit menu section
         self.edit_menu = self.main_menu.addMenu("Edit")
@@ -116,13 +165,14 @@ class JourneyMainUI(QtWidgets.QWidget):
         self.tab_widget = QtWidgets.QTabWidget()
 
         self.config_tab = setup_tab.SetupTabUI(self)
-        self.guides_tab = QtWidgets.QWidget()
+        self.guides_tab = guides_tab.GuidesTabUI(self)
 
         self.tab_widget.addTab(self.config_tab, "Config")
         self.tab_widget.addTab(self.guides_tab, "Guides")
 
         # get widget tab instances and reassign to variables
         self.config_tab = self.tab_widget.widget(0)
+        self.guides_tab = self.tab_widget.widget(1)
 
 
         self.setWindowTitle("tab demo")
@@ -161,6 +211,8 @@ class JourneyMainUI(QtWidgets.QWidget):
         # menu signals
         self.load_preset_m.triggered.connect(self.menu_load_preset)
         self.new_m.triggered.connect(self.menu_new)
+        self.save_m.triggered.connect(self.menu_save)
+        self.restore_window_m.triggered.connect(self.menu_restore_window)
 
 
     def create_ws_control(self):
@@ -176,8 +228,12 @@ class JourneyMainUI(QtWidgets.QWidget):
     def showEvent(self, e):
         self.set_ui_title()
 
+    # def closeEvent(self, event):
+    #     save(self.settings)
+    #     super().closeEvent(event)
+
     def set_ui_title(self):
-        self.config_tab.line_edit.setText(self.character_name)
+        self.config_tab.char_name_le.setText(self.character_name)
         if self.ws_control_inst.is_floating():
             self.ws_control_inst.set_label(self.character_name + " - " + self.UI_TITLE)
         else:
@@ -202,7 +258,7 @@ class JourneyMainUI(QtWidgets.QWidget):
 
             if result == 'OK':
                 name = pm.promptDialog(query=True, text=True)
-                # self.ws_control_inst.restore(self)
+                #self.ws_control_inst.restore(self)
                 if name:
                     self.character_name = name
                 else:
@@ -210,13 +266,47 @@ class JourneyMainUI(QtWidgets.QWidget):
 
                 self.set_ui_title()
 
+    def menu_save(self):
+        json_value = {
+            "char_name": self.config_tab.char_name_le.text(),
+            "model_file": self.config_tab.filepath_le.text(),
+        }
+        print json_value    
+        p = os.path.dirname(presets.__file__)
+        print p
+        with open(p + "\{}.json".format(self.config_tab.get_character_name()), 'w') as json_file:
+            json.dump(json_value, json_file)
+        # save(self.settings)
+        # print self.settings
+
+
     def menu_load_preset(self):
-        filepath, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", "",
+        filepath, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", os.path.dirname(presets.__file__),
                                                                           self.LOAD_PRESET_FILTERS,
-                                                                          self.selected_preset_filter)
+                                                                          self.selected_load_preset_filter)
         if filepath:
             print filepath
+            with open(filepath, 'r') as json_file:
+                jdata = json.load(json_file)
+                self.config_tab.char_name_le.setText(jdata['char_name'])
+                self.config_tab.filepath_le.setText(jdata['model_file'])
+                self.config_tab.filepath_le.setText(jdata['model_file'])
 
+    
+    def menu_restore_window(self):
+        confirm = pm.confirmDialog(title='Confirm', message='Are you sure?', button=['Yes', 'No'],
+                                   defaultButton='Yes', cancelButton='No', dismissString='No')
+        if confirm == 'Yes':
+            try:
+                self.setParent(None)
+                self.deleteLater()
+            except:
+                pass
+            ws_control_name = self.get_ws_control_name()
+            if pm.window(ws_control_name, exists=True):
+                pm.deleteUI(ws_control_name)
+            
+            d = show()
 
     #############
     # SLOTS END #
