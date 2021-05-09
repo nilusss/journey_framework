@@ -15,7 +15,7 @@ reload(ctrl)
 reload(tools)
 
 
-class Guides(object):
+class Guides(se.Serialize):
     def __init__(self, prefix=''):
         self.name = ''
         self.prefix = ''
@@ -26,6 +26,13 @@ class Guides(object):
         self.parent = ''
         self.space_switches = ''
         self.guess_up = 1
+        self.ctrl_positions = {}
+
+        self.CLASS_NAME = self.__class__.__name__
+
+    def serialize(self):
+        self.get_controllers_trs()
+        return super(Guides, self).serialize()
 
     def create(self):
         if pm.ls(self.name + '*'):
@@ -88,6 +95,33 @@ class Guides(object):
 
     def delete_guide(self):
         """used for deleting module and mirror module"""
+
+    def get_controllers_trs(self):
+
+        for ctrl in self.controllers + [self.base_ctrl] + [self.radius_ctrl]:
+            print ctrl
+            self.ctrl_positions[ctrl.name()] = {}
+            for ch in ['t', 'r', 's']:
+                print ch
+                for axis in ['x', 'y', 'z']:
+                    print axis
+                    try:
+                        print "a"
+                        attr_val = pm.PyNode(ctrl).getAttr(ch + axis)
+                        self.ctrl_positions[ctrl.name()][ch + axis] = attr_val
+                    except:
+                        pass
+
+        print self.ctrl_positions
+
+    def set_controllers_trs(self):
+        if self.ctrl_positions:
+            for d_ctrl in self.ctrl_positions.keys():
+                for attr in self.ctrl_positions[d_ctrl].keys():
+                    try:
+                        pm.PyNode(d_ctrl).attr(attr).set(self.ctrl_positions[d_ctrl][attr])
+                    except:
+                        pass
 
     def base_guide(self, r=1, up_axis='ty'):
         attr_up = '.' + up_axis
@@ -181,8 +215,15 @@ class Guides(object):
             pm.parent(self.base_ctrl, self.parent)
             pm.select(None)
         elif self.sel_parent:
+            self.parent = self.sel_parent
             pm.parent(self.base_ctrl, self.sel_parent)
             pm.select(None)
+        for attr in ['tx', 'ty', 'tz']:
+            print attr
+            try:
+                self.base_ctrl.attr(attr).set(0)
+            except:
+                pass
 
     def do_parent_line(self):
         if self.parent:
@@ -422,8 +463,10 @@ class DrawArm(Guides):
         self.controllers = []
         self.parent = parent
         self.space_switches = space_switches
+        self.ctrl_positions = {}
 
     def draw(self):
+        self.driven_joints = []
         self.create()
         pm.select(None)
 
@@ -462,8 +505,12 @@ class DrawArm(Guides):
         self.driven_joints.append(elbow_joint)
         self.driven_joints.append(wrist_joint)
 
+        print self.driven_joints
+
         for i, j in enumerate(self.driven_joints):
+            print j
             if i > 0:
+                print self.driven_joints[i]
                 b = pm.aimConstraint(self.driven_joints[i], self.driven_joints[i - 1],
                                      upVector=[0, 0, 0], worldUpType='none', mo=True)
 
@@ -478,6 +525,7 @@ class DrawArm(Guides):
 
         self.get_module_joints()
         self.base_one_scale()
+        self.set_controllers_trs()
         pm.select(self.base_ctrl)
 
         return self
@@ -495,6 +543,7 @@ class DrawEye(Guides):
         self.controllers = []
         self.parent = parent
         self.space_switches = space_switches
+        self.ctrl_positions = {}
 
     def draw(self):
         self.create()
@@ -533,6 +582,7 @@ class DrawEye(Guides):
         self.do_parent()
         self.get_module_joints()
         self.base_one_scale()
+        self.set_controllers_trs()
         pm.select(self.base_ctrl)
 
         return self
@@ -550,6 +600,7 @@ class DrawFoot(Guides):
         self.controllers = []
         self.parent = parent
         self.space_switches = space_switches
+        self.ctrl_positions = {}
 
     def draw(self):
         self.create()
@@ -628,6 +679,7 @@ class DrawFoot(Guides):
         self.center_joint = pm.rename(self.center_joint, self.center_joint.replace('_jnt', 'Ankle_jnt'))
         self.get_module_joints()
         self.base_one_scale()
+        self.set_controllers_trs()
         pm.select(self.base_ctrl)
 
         return self
@@ -662,6 +714,7 @@ class DrawLimb(Guides):
         self.controllers = []
         self.parent = parent
         self.space_switches = space_switches
+        self.ctrl_positions = {}
 
     def draw(self):
         self.create()
@@ -711,6 +764,7 @@ class DrawLimb(Guides):
         self.do_parent()
         self.get_module_joints()
         self.base_one_scale()
+        self.set_controllers_trs()
         pm.select(self.base_ctrl)
 
         return self
@@ -722,6 +776,7 @@ class DrawMaster(Guides):
         self.prefix = 'c_root'
         self.module_name = re.findall('[A-Z][^A-Z]*', str(self.__class__.__name__))[-1]
         self.name = self.module_name + '___' + self.prefix
+        self.ctrl_positions = {}
 
     def draw(self):
         self.create()
@@ -744,6 +799,7 @@ class DrawMaster(Guides):
 
         self.get_module_joints()
         self.base_one_scale()
+        self.set_controllers_trs()
         pm.select(self.base_ctrl)
 
         return self
@@ -766,6 +822,7 @@ class DrawMeta(Guides):
         self.space_switches = space_switches
         self.amount = amount
         self.fingers_controllers = []
+        self.ctrl_positions = {}
 
     def draw(self):
         self.create()
@@ -886,6 +943,7 @@ class DrawMeta(Guides):
                 else:
                     self.base_ctrl.attr('finger_joints').set(j)
         self.base_ctrl.attr('module_joints').set(module_joints)
+        self.set_controllers_trs()
 
         pm.select(self.base_ctrl)
 
@@ -903,6 +961,7 @@ class DrawSpine(Guides):
         self.module_name = re.findall('[A-Z][^A-Z]*', str(self.__class__.__name__))[-1]
         self.name = self.module_name + '___' + self.prefix
         self.amount = amount
+        self.ctrl_positions = {}
 
     def draw(self):
         self.create()
@@ -941,6 +1000,7 @@ class DrawSpine(Guides):
         self.do_parent()
         self.get_module_joints()
         self.base_one_scale()
+        self.set_controllers_trs()
         pm.select(self.base_ctrl)
 
         return self
@@ -959,6 +1019,7 @@ class DrawNeck(Guides):
         self.module_name = re.findall('[A-Z][^A-Z]*', str(self.__class__.__name__))[-1]
         self.name = self.module_name + '___' + self.prefix
         self.amount = amount
+        self.ctrl_positions = {}
 
     def draw(self):
         self.create()
@@ -998,6 +1059,7 @@ class DrawNeck(Guides):
         self.do_parent()
         self.get_module_joints()
         self.base_one_scale()
+        self.set_controllers_trs()
         pm.select(self.base_ctrl)
 
         return self

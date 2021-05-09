@@ -8,6 +8,7 @@ import maya.cmds as mc
 import traceback
 from functools import partial
 # import sip
+reload(guides)
 """
 TODO: make dialog a dockable window
 """
@@ -119,6 +120,7 @@ class BuilderUI(QtWidgets.QDialog):
         except Exception as e:
             raise e
         finally:
+            pass
             mc.undoInfo(closeChunk=True, chunkName="drawguide")
 
         
@@ -145,7 +147,7 @@ class BuilderUI(QtWidgets.QDialog):
         try:
             print "IN"
             guide_list_item = QtWidgets.QListWidgetItem()
-            guide_list_item.setData(0, returned_guide)
+            guide_list_item.setData(QtCore.Qt.UserRole, returned_guide)
             guide_list_item.setText(side_value + prefix)
             self.parent_inst.list_wdg.addItem(guide_list_item)
         except Exception as e:

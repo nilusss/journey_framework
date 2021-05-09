@@ -20,9 +20,6 @@ reload(se)
 reload(bwsc)
 reload(setup_tab)
 reload(guides_tab)
-"""
-TODO: make dialog a dockable window
-"""
 
 
 def value_is_valid(val):
@@ -37,6 +34,7 @@ def get_maya_window():
     """
     ptr = mui.MQtUtil.mainWindow()  # ptr = pointer
     return wrapInstance(long(ptr), QtWidgets.QWidget)
+
 
 def restore(settings):
     finfo = QtCore.QFileInfo(settings.fileName())
@@ -54,6 +52,7 @@ def restore(settings):
                             val = int(val)
                         w.setProperty(name, val)
                 settings.endGroup()
+
 
 def save(settings):
     for w in QtWidgets.qApp.allWidgets():
@@ -117,10 +116,7 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         self.create_layout()
         self.create_connections()
         self.create_ws_control()
-
-        # self.settings = QtCore.QSettings("JourneyFramework", "JourneyFramework")
-        # print(self.settings.fileName())
-        # restore(self.settings)
+        self.temp_load_preset()  # TODO: REMOVE THIS LINE AND FUNCTION WHEN DONE TESTING
 
     def create_menu(self):
         # Create a menubar
@@ -130,7 +126,7 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         self.file_menu = self.main_menu.addMenu("File")
         self.new_m = QtWidgets.QAction('New Preset', self)
         self.load_preset_m = QtWidgets.QAction('Load Preset...', self)
-        self.save_m = QtWidgets.QAction('Save', self)
+        self.save_m = QtWidgets.QAction('Save Preset', self)
         self.save_as_m = QtWidgets.QAction('Save As...', self)
         self.restore_window_m = QtWidgets.QAction("Restore Window...", self)
 
@@ -202,7 +198,6 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         main_layout.addLayout(menu_layout)
         main_layout.addLayout(tab_layout)
 
-
         main_layout.addStretch()
 
         self.setLayout(main_layout)
@@ -213,7 +208,6 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         self.new_m.triggered.connect(self.menu_new)
         self.save_m.triggered.connect(self.menu_save)
         self.restore_window_m.triggered.connect(self.menu_restore_window)
-
 
     def create_ws_control(self):
         self.ws_control_inst = bwsc.BaseWorkspaceControl(self.get_ws_control_name())
@@ -227,10 +221,6 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
 
     def showEvent(self, e):
         self.set_ui_title()
-
-    # def closeEvent(self, event):
-    #     save(self.settings)
-    #     super().closeEvent(event)
 
     def set_ui_title(self):
         self.config_tab.char_name_le.setText(self.character_name)
@@ -258,7 +248,6 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
 
             if result == 'OK':
                 name = pm.promptDialog(query=True, text=True)
-                #self.ws_control_inst.restore(self)
                 if name:
                     self.character_name = name
                 else:
@@ -270,6 +259,8 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         json_value = {
             "char_name": self.config_tab.char_name_le.text(),
             "model_file": self.config_tab.filepath_le.text(),
+            "builder_file": self.config_tab.filepath_builder_le.text(),
+            "skin_weights_dir": self.config_tab.filepath_skin_le.text(),
         }
         print json_value    
         p = os.path.dirname(presets.__file__)
@@ -279,33 +270,60 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         # save(self.settings)
         # print self.settings
 
-
     def menu_load_preset(self):
-        filepath, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", os.path.dirname(presets.__file__),
+        filepath, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self, "Select File",
+                                                                          os.path.dirname(presets.__file__),
                                                                           self.LOAD_PRESET_FILTERS,
                                                                           self.selected_load_preset_filter)
         if filepath:
             print filepath
             with open(filepath, 'r') as json_file:
                 jdata = json.load(json_file)
-                self.config_tab.char_name_le.setText(jdata['char_name'])
-                self.config_tab.filepath_le.setText(jdata['model_file'])
-                self.config_tab.filepath_le.setText(jdata['model_file'])
+                try:
+                    self.config_tab.char_name_le.setText(jdata['char_name'])
+                except:
+                    pass
+                try:
+                    self.config_tab.filepath_le.setText(jdata['model_file'])
+                except:
+                    pass
+                try:
+                    self.config_tab.filepath_builder_le.setText(jdata['builder_file'])
+                except:
+                    pass
+                try:
+                    self.config_tab.filepath_skin_le.setText(jdata['skin_dir'])
+                except:
+                    pass
 
-    
+    def temp_load_preset(self):
+        """TODO: REMOVE FUNCTION LATER. ONLY USED FOR LOADING A PRESET WHEN SHOWING UI"""
+        filepath = r'C:\Users\nilas\Documents\maya\2019\modules\journey_framework\journey\presets\bingbong.json'
+        if filepath:
+            print filepath
+            with open(filepath, 'r') as json_file:
+                jdata = json.load(json_file)
+                try:
+                    self.config_tab.char_name_le.setText(jdata['char_name'])
+                except:
+                    pass
+                try:
+                    self.config_tab.filepath_le.setText(jdata['model_file'])
+                except:
+                    pass
+                try:
+                    self.config_tab.filepath_builder_le.setText(jdata['builder_file'])
+                except:
+                    pass
+                try:
+                    self.config_tab.filepath_skin_le.setText(jdata['skin_dir'])
+                except:
+                    pass
+
     def menu_restore_window(self):
         confirm = pm.confirmDialog(title='Confirm', message='Are you sure?', button=['Yes', 'No'],
                                    defaultButton='Yes', cancelButton='No', dismissString='No')
         if confirm == 'Yes':
-            try:
-                self.setParent(None)
-                self.deleteLater()
-            except:
-                pass
-            ws_control_name = self.get_ws_control_name()
-            if pm.window(ws_control_name, exists=True):
-                pm.deleteUI(ws_control_name)
-            
             d = show()
 
     #############
@@ -324,5 +342,4 @@ def show():
         pm.deleteUI(ws_control_name)
 
     d = JourneyMainUI()
-    #d.show()
     return d

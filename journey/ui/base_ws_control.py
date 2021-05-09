@@ -60,13 +60,3 @@ class BaseWorkspaceControl(object):
 
     def is_collapsed(self):
         return pm.workspaceControl(self.name, q=True, collapse=True)
-
-#
-# def show():
-#     ws_control_name = "JourneyMainUIWS"
-#     if pm.window(ws_control_name, exists=True):
-#         pm.deleteUI(ws_control_name)
-#
-#     ws_control = BaseWorkspaceControl(ws_control_name)
-#     ws_control.create(ws_control_name, QtWidgets.QPushButton("Push"))
-#     ws_control.set_label("ws control")

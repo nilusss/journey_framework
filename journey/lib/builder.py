@@ -125,11 +125,9 @@ class Builder():
 
                         print n_chain
                         get_transform = n_chain[0].getParent()
-                        print 'TRANSFORM IS: ' + get_transform
                         get_transform_parent = get_transform.getParent()
                         print get_transform_parent
                         if 'transform' in get_transform.name():
-                            print 'FOUND TRANSFORM'
                             print get_transform.name()
                             pm.makeIdentity(get_transform, s=True, apply=True)
                             pm.parent(n_chain[0], get_transform_parent)

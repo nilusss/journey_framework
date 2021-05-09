@@ -10,7 +10,7 @@ TODO: Test with other modules
 import json
 
 
-def decode(o):
+def decode_module(o):
     import journey.lib.modules as mo
     if o.get('CLASS_NAME'):
         module = str(o.get('CLASS_NAME')).lower()
@@ -21,8 +21,23 @@ def decode(o):
     return o
 
 
-def deserialize(serialized_object):
-    return json.loads(serialized_object, object_hook=decode)
+def decode_guide(o):
+    import journey.lib.guides as guides
+    if o.get('CLASS_NAME'):
+        print o.get('prefix')
+        exec ("return_class = guides.{}(prefix='{}')".format(o.get('CLASS_NAME'), o.get('prefix')))
+        a = return_class
+        a.__dict__.update((k, v) for k, v in o.iteritems())
+        return (a)
+    return o
+
+
+def deserialize_module(serialized_object):
+    return json.loads(serialized_object, object_hook=decode_module)
+
+
+def deserialize_guide(serialized_object):
+    return json.loads(serialized_object, object_hook=decode_guide)
 
 
 class Encoder(json.JSONEncoder):
@@ -41,6 +56,11 @@ class Serialize(object):
         super(Serialize, self).__init__()
 
     def serialize(self):
+        """TODO: serialize position rotation scale, mirror and other string attributes on controllers"""
+        try:
+            self.get_controllers_trs()
+        except:
+            pass
         return json.dumps(self.__dict__, cls=Encoder)
         # return dict(class_name='__{}__'.format(self.__class__.__name__), struct=json.dumps(self.__dict__, cls=Encoder))
         # json.dumps(self, default=lambda o: o.get_dict())
