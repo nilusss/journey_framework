@@ -19,7 +19,6 @@ class Guides(se.Serialize):
     def __init__(self, prefix=''):
         self.name = ''
         self.prefix = ''
-        self.offset = [0, 0, 0]
         self.module_name = ''
         self.driven_joints = []
         self.controllers = []
@@ -36,6 +35,8 @@ class Guides(se.Serialize):
         return super(Guides, self).serialize()
 
     def create(self):
+        self.driven_joints = []
+        self.controllers = []
         if pm.ls(self.name + '*'):
             pm.error("Module already exists with prefix: " + self.name)
         self.sel_parent = pm.ls(sl=True, type='transform')
@@ -251,6 +252,8 @@ class Guides(se.Serialize):
         self.base_ctrl.attr('sz').set(1)
 
     def set_mirror(self, enabled=False):
+        if 'c_' in self.prefix:
+            return pm.warning('Can\'t mirror \"Center\" objects!')
         if enabled:
             self.mirror_enabled = True
             self.base_ctrl.attr('mirror_enable').set(1)
@@ -268,7 +271,8 @@ class Guides(se.Serialize):
 
     def mirror(self):
         """TODO: give the possibility to mirror on any axis. ATM only mirror from X to -X"""
-        #self.set_mirror()
+        self.ctrl_positions = {}
+        print "POSITIONS: " + str(self.ctrl_positions)
 
         mirror_grp = pm.ls("MIRROR_GRP")
         if not mirror_grp:
@@ -298,6 +302,7 @@ class Guides(se.Serialize):
             dup_axis = -1
         else:
             # dup_parent = self.get_parent().name().replace('l_', 'r_')
+
             dup_parent = self.get_parent()
             dup_axis = -1
 
@@ -357,6 +362,12 @@ class Guides(se.Serialize):
         pm.select(None)
 
         pm.parent(dup_guide.base_ctrl, self.dup_mirror_offset_grp)
+
+        print "##PRINTING CONTROLLERS##"
+        print self.controllers
+        print dup_guide.controllers
+        print hidden_guide.controllers
+        print "##DONE##"
 
         for og_ctrl, hid_ctrl in zip(self.controllers, hidden_guide.controllers):
             tools.matrix_constraint(og_ctrl, hid_ctrl)

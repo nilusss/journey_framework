@@ -338,14 +338,16 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
             self.loaded_file_label.setText('File: ')
 
     def menu_load_preset(self):
+        os.path.dirname(presets.__file__)
         filepath, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self, "Select File",
-                                                                          os.path.dirname(presets.__file__),
+                                                                          "",
                                                                           self.LOAD_PRESET_FILTERS,
                                                                           self.selected_load_preset_filter)
         if filepath:
             with open(filepath, 'r') as json_file:
                 jdata = json.load(json_file)
                 try:
+                    self.guides_tab.check_if_guides_exists()
                     self.config_tab.char_name_le.setText(jdata['char_name'])
                     self.character_name = jdata['char_name']
                     try:

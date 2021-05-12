@@ -100,10 +100,11 @@ class GuidesTabUI(QtWidgets.QWidget):
     def create_connections(self):
         self.open_builder_btn.clicked.connect(self.open_builder)
         self.save_guides_btn.clicked.connect(self.save_guides)
-        self.list_wdg.itemSelectionChanged.connect(self.on_change_item_selection)
+        self.list_wdg.currentItemChanged.connect(self.on_change_item_selection)
         self.settings_delete_btn.clicked.connect(self.on_delete_guide)
         self.dropdown_mirror_menu.activated.connect(self.on_change_mirror)
         self.rig_guides_btn.clicked.connect(self.on_rig_guides)
+        self.refresh_btn.clicked.connect(self.check_if_guides_exists)
 
     def get_mirror_state(self):
         return self.selected_guide_inst.base_ctrl.getAttr('mirror_enable')
@@ -151,23 +152,48 @@ class GuidesTabUI(QtWidgets.QWidget):
     def on_change_item_selection(self):
         print "from UI"
         get_sel = ''
-        try:
-            get_sel = self.list_wdg.currentItem().data(QtCore.Qt.UserRole).base_ctrl
-            print get_sel
-        except:
-            pass
-        if pm.objExists(get_sel):
-            print "got object"
-            pm.select(get_sel)
-            self.selected_guide_inst = self.list_wdg.currentItem().data(QtCore.Qt.UserRole)
-            self.change_settings_panel()
-        else:
-            print "cant find"
-            pm.select(clear=True)
-            selected_list = self.list_wdg.selectionModel().selectedIndexes()
-            for index in selected_list:
-                self.list_wdg.model().removeRow(index.row())
-            self.selected_guide_inst = ''
+        sel = pm.ls(sl=True)
+        if not sel:
+            #self.check_if_guides_exists()
+            try:
+                get_sel = self.list_wdg.currentItem().data(QtCore.Qt.UserRole).base_ctrl
+                print get_sel
+            except:
+                pass
+            if pm.objExists(get_sel):
+                print "got object"
+                pm.select(get_sel)
+                self.selected_guide_inst = self.list_wdg.currentItem().data(QtCore.Qt.UserRole)
+                self.change_settings_panel()
+            # else:
+                # self.check_if_guides_exists()
+                # print "cant find"
+                # pm.select(clear=True)
+                # selected_list = self.list_wdg.selectionModel().selectedIndexes()
+                # for index in selected_list:
+                #     self.list_wdg.model().removeRow(index.row())
+                # self.selected_guide_inst = ''
+
+    def check_if_guides_exists(self):
+        print "## CHECK IF GUIDES EXISTS ##"
+        items = []
+        for x in range(self.list_wdg.count()):
+            items.append(self.list_wdg.item(x))
+        for item in items:
+            item_obj = item
+            object_row = self.list_wdg.row(item)
+            if item_obj:
+                item_obj = item_obj.data(QtCore.Qt.UserRole).base_ctrl
+            else:
+                self.list_wdg.takeItem(object_row)
+            if not item_obj:
+                item_obj = ''
+            if not pm.objExists(item_obj):
+                print "OBJECT DOESNT EXIST"
+                self.list_wdg.takeItem(object_row)
+            #self.list_wdg.takeItem(index)
+
+        print "## DONE ##"
 
     def on_delete_guide(self):
         pass
@@ -198,12 +224,27 @@ class GuidesTabUI(QtWidgets.QWidget):
                                 match = fnmatch.fnmatch(c.name(), '*_base')
                                 if match:
                                     if 'HIDDEN' not in c.name():
-                                        modules.append(c)
+                                        get_parent = pm.listRelatives(c.name(), parent=True)[0]
+                                        print get_parent
+                                        if "MIRROR" not in get_parent.name():
+                                            modules.append(c)
+                                            print modules
                     for i, module in enumerate(modules):
-                        item_obj = self.list_wdg.item(i).data(QtCore.Qt.UserRole)
-                        if item_obj.base_ctrl == module:
-                            obj_to_dict = item_obj.serialize()
-                            guide_dict_list.append(obj_to_dict)
+                        custom_name = pm.PyNode(module).getAttr('custom_name')
+                        print custom_name
+                        item_obj = ''
+                        try:
+                            item_obj = self.list_wdg.findItems(custom_name, QtCore.Qt.MatchExactly)[0].data(QtCore.Qt.UserRole)
+                            print item_obj
+                        except:
+                            pass
+                        try:
+                            if pm.objExists(item_obj.base_ctrl):
+                                obj_to_dict = item_obj.serialize()
+                                print obj_to_dict
+                                guide_dict_list.append(obj_to_dict)
+                        except:
+                            pass
 
                     #json_write = json.dumps(guide_dict_list, )
                     json.dump(guide_dict_list, json_file)
