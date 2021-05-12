@@ -44,7 +44,7 @@ class SetupTabUI(QtWidgets.QWidget):
         # model filepath
         self.filepath_le = QtWidgets.QLineEdit()
         self.filepath_btn = QtWidgets.QPushButton()
-        self.import_model_btn = QtWidgets.QPushButton("Import as template")
+        self.import_model_btn = QtWidgets.QPushButton("Import model")
         self.filepath_btn.setIcon(QtGui.QIcon(":fileOpen.png"))
         self.filepath_btn.setToolTip("Select Model File")
         self.filepath_label = QtWidgets.QLabel()
@@ -180,6 +180,13 @@ class SetupTabUI(QtWidgets.QWidget):
             node = pm.createNode('transform', n=self.get_character_name() + '_temp_grp')
             pm.parent(model_node, node)
 
+            pm.displaySurface(node, xRay=True)
+
+            node.attr('overrideEnabled').set(1)
+            node.attr('overrideDisplayType').set(2)
+
+
+
         else:
             pm.warning("No model file available")
 
@@ -192,7 +199,12 @@ class SetupTabUI(QtWidgets.QWidget):
             with open(filepath, 'r') as json_file:
                 jdata = json.load(json_file)
                 for data in jdata:
-                    obj = se.deserialize_guide(data)
+                    try:
+                        obj = se.deserialize_guide(data)
+                    except:
+                        pm.confirmDialog(title='File Error!', message='Loaded file is not a valid preset file',
+                                         button=['Ok'], defaultButton='Ok')
+                        break
                     obj.draw()
                     guide_list_item = QtWidgets.QListWidgetItem()
                     guide_list_item.setData(QtCore.Qt.UserRole, obj)

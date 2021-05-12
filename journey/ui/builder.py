@@ -53,10 +53,10 @@ class BuilderUI(QtWidgets.QDialog):
 
         # create guide position radio buttons
         self.radiobutton_01 = QtWidgets.QRadioButton("Left")
-        self.radiobutton_01.setChecked(True)
         self.radiobutton_01.side = "l_"
 
         self.radiobutton_02 = QtWidgets.QRadioButton("Center")
+        self.radiobutton_02.setChecked(True)
         self.radiobutton_02.side = "c_"
 
         self.radiobutton_03 = QtWidgets.QRadioButton("Right")
@@ -94,9 +94,14 @@ class BuilderUI(QtWidgets.QDialog):
         main_layout = QtWidgets.QVBoxLayout()
         main_layout.setContentsMargins(10, 10, 10, 10)
 
+        main_layout.addWidget(QtWidgets.QLabel('Position:'))
         main_layout.addLayout(radio_layout)
+        main_layout.addSpacing(10)
+
         main_layout.addWidget(self.prefix_label)
         main_layout.addWidget(self.line_edit)
+        main_layout.addSpacing(10)
+        main_layout.addWidget(QtWidgets.QLabel('Modules:'))
         main_layout.addWidget(self.list_wdg)
         main_layout.addWidget(self.draw_btn)
 
@@ -123,14 +128,22 @@ class BuilderUI(QtWidgets.QDialog):
             pass
             mc.undoInfo(closeChunk=True, chunkName="drawguide")
 
-        
-
     ###############
     # SLOTS START #
     ###############
+
     def change_selection(self):
         prefix = self.list_wdg.currentItem().text().replace('Draw', '')
         self.line_edit.setText(prefix.lower())
+        check_string = ['Spine', 'Master', 'Neck']
+        if any(s in self.list_wdg.currentItem().text() for s in check_string):
+            self.radiobutton_01.setChecked(False)
+            self.radiobutton_02.setChecked(True)
+            self.radiobutton_03.setChecked(False)
+        else:
+            self.radiobutton_01.setChecked(True)
+            self.radiobutton_02.setChecked(False)
+            self.radiobutton_03.setChecked(False)
 
     def on_list_change_prefix(self):
         self.change_selection()

@@ -14,6 +14,8 @@ reload(builder)
 
 
 class GuidesTabUI(QtWidgets.QWidget):
+    """TODO: ADD ABILITY TO DELETE THE LOADED PRESET. THIS WILL DELETE THE PRESET FROM DISC, BUT SHOULD KEEP CURRENT VALUES
+     TODO: ADD A LINE SHOWING WHAT FILE HAS BEEN LOADED. AT THE TOP OF THE WINDOW"""
 
     FILE_FILTER = "Maya (*.ma *.mb);;Maya ASCII (*.ma);;Maya Binary (*.mb);; All Files(*.*)"
 
@@ -46,18 +48,30 @@ class GuidesTabUI(QtWidgets.QWidget):
         self.list_wdg = QtWidgets.QListWidget()
         self.list_wdg.setCurrentRow(0)
         self.list_wdg.setMaximumHeight(300)
+        self.refresh_btn = QtWidgets.QPushButton("Refresh")
         self.save_guides_btn = QtWidgets.QPushButton("Save Guides")
 
         self.settings_label = QtWidgets.QLabel()
-        self.settings_delete_btn = QtWidgets.QPushButton('Delete')
+        self.dropdown_mirror_label = QtWidgets.QLabel("Mirror:")
+        self.dropdown_mirror_menu = QtWidgets.QComboBox()
+        self.dropdown_mirror_menu.addItems(['off', 'on'])
+        self.settings_delete_btn = QtWidgets.QPushButton('Delete guide')
 
 
     def create_layout(self):
         """Layout all the controls in corresponding layout"""
         self.settings_frame = QtWidgets.QFrame()
-        settings_layout = QtWidgets.QHBoxLayout()
-        settings_layout.addWidget(self.settings_label)
+        settings_layout = QtWidgets.QGridLayout()
+        settings_layout.addWidget(self.settings_label, 0, 0)
+        settings_layout.addWidget(self.dropdown_mirror_label, 1, 0)
+        settings_layout.addWidget(self.dropdown_mirror_menu, 1, 1)
+        settings_layout.addWidget(self.settings_delete_btn, 3, 0)
         self.settings_frame.setLayout(settings_layout)
+
+        refresh_layout = QtWidgets.QGridLayout()
+        refresh_layout.addWidget(self.refresh_btn, 0, 0)
+        refresh_layout.addWidget(self.save_guides_btn, 0, 1)
+
         # create main layout
         main_layout = QtWidgets.QVBoxLayout()
         main_layout.setContentsMargins(5, 10, 5, 5)
@@ -66,9 +80,8 @@ class GuidesTabUI(QtWidgets.QWidget):
         main_layout.addSpacing(10)
 
         main_layout.addWidget(self.list_wdg)
-
         main_layout.addSpacing(10)
-        main_layout.addWidget(self.save_guides_btn)
+        main_layout.addLayout(refresh_layout)
 
         main_layout.addSpacing(10)
         main_layout.addWidget(self.settings_frame)
@@ -83,6 +96,11 @@ class GuidesTabUI(QtWidgets.QWidget):
         self.open_builder_btn.clicked.connect(self.open_builder)
         self.save_guides_btn.clicked.connect(self.save_guides)
         self.list_wdg.itemSelectionChanged.connect(self.on_change_item_selection)
+        self.settings_delete_btn.clicked.connect(self.on_delete_guide)
+        self.dropdown_mirror_menu.activated.connect(self.on_change_mirror)
+
+    def get_mirror_state(self):
+        return self.selected_guide_inst.base_ctrl.getAttr('mirror_enable')
 
     ###############
     # SLOTS START #
@@ -90,7 +108,17 @@ class GuidesTabUI(QtWidgets.QWidget):
     def simple_print(self):
         print "yuuh"
 
+    def on_change_mirror(self):
+        state = self.dropdown_mirror_menu.currentIndex()
+        if state:
+            if self.selected_guide_inst:
+                self.selected_guide_inst.set_mirror(True)
+        else:
+            if self.selected_guide_inst:
+                self.selected_guide_inst.set_mirror(False)
+
     def on_change_selection_in_viewport(self):
+        print "from viewport"
         sel_list = pm.ls(sl=True)
         if sel_list:
             for item in sel_list:
@@ -101,17 +129,33 @@ class GuidesTabUI(QtWidgets.QWidget):
                             self.list_wdg.setCurrentItem(self.list_wdg.item(list_index))
         else:
             self.list_wdg.clearSelection()
+            self.selected_guide_inst = ''
             pm.select(clear=True)
             self.settings_frame.hide()
 
     def on_change_item_selection(self):
-        self.change_settings_panel()
-        get_sel = self.list_wdg.currentItem().data(QtCore.Qt.UserRole).base_ctrl
-        viewport_sel = pm.ls(sl=True)
+        print "from UI"
+        get_sel = ''
+        try:
+            get_sel = self.list_wdg.currentItem().data(QtCore.Qt.UserRole).base_ctrl
+            print get_sel
+        except:
+            pass
         if pm.objExists(get_sel):
+            print "got object"
             pm.select(get_sel)
+            self.selected_guide_inst = self.list_wdg.currentItem().data(QtCore.Qt.UserRole)
+            self.change_settings_panel()
         else:
+            print "cant find"
             pm.select(clear=True)
+            selected_list = self.list_wdg.selectionModel().selectedIndexes()
+            for index in selected_list:
+                self.list_wdg.model().removeRow(index.row())
+            self.selected_guide_inst = ''
+
+    def on_delete_guide(self):
+        pass
 
     def open_builder(self):
         #builder.BuilderUI(self)
@@ -157,12 +201,21 @@ class GuidesTabUI(QtWidgets.QWidget):
         self.settings_frame.show()
         try:
             self.settings_label.setText('Settings for: ' + self.list_wdg.currentItem().text())
+            self.selected_guide_inst = self.list_wdg.currentItem().data(QtCore.Qt.UserRole)
+            if self.get_mirror_state():
+                index = self.dropdown_mirror_menu.findText("on", QtCore.Qt.MatchFixedString)
+                print "mirror is on"
+
+            else:
+                print "mirror is off"
+                index = self.dropdown_mirror_menu.findText("off", QtCore.Qt.MatchFixedString)
+            try:
+                if index >= 0:
+                    self.dropdown_mirror_menu.setCurrentIndex(index)
+            except:
+                pass
         except:
             pass
-
-
-
-
 
 
     #############

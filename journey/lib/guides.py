@@ -27,6 +27,7 @@ class Guides(se.Serialize):
         self.space_switches = ''
         self.guess_up = 1
         self.ctrl_positions = {}
+        self.mirror_enabled = False
 
         self.CLASS_NAME = self.__class__.__name__
 
@@ -54,6 +55,7 @@ class Guides(se.Serialize):
             pm.addAttr(self.base_ctrl, longName=bool_attr, attributeType='bool')
             self.base_ctrl.attr(bool_attr).set(1)
             pm.setAttr(self.base_ctrl + '.' + bool_attr, edit=True, channelBox=True)
+        self.base_ctrl.attr('mirror_enable').set(self.mirror_enabled)
 
         string_attr_list = ['module_namespace', 'custom_name', 'mirror_axis', 'mirror_name', 'parent_module',
                             'parent_joint', 'space_switches', 'hook_node', 'module_info', 'guide_info', 'rig_type',
@@ -174,6 +176,13 @@ class Guides(se.Serialize):
         self.base_ctrl.attr('parent_joint').set(joint)
         return joint
 
+    def get_child_module(self, obj, search_string='_base'):
+        child_module = pm.PyNode(obj).getChildren()
+        child_module = [match for match in child_module if search_string in match.name()]
+        if child_module:
+            #self.base_ctrl.attr('parent_module').set(self.parent_module[0])
+            return child_module[0]
+
     def get_parent(self):
         return self.base_ctrl.getParent()
 
@@ -227,11 +236,12 @@ class Guides(se.Serialize):
 
     def do_parent_line(self):
         if self.parent:
-            self.p_line = tools.create_line(self.parent, self.controllers[0], 'parent_' + self.controllers[0])
+            self.p_line = self.create_parent_line(prefix='parent_' + self.controllers[0])
             pm.parent(self.p_line[0], self.parts, r=True)
             return self.p_line
         elif self.sel_parent:
-            self.p_line = tools.create_line(self.sel_parent, self.controllers[0], 'parent_' + self.controllers[0])
+            self.parent = self.sel_parent
+            self.p_line = self.create_parent_line(prefix='parent_' + self.controllers[0])
             pm.parent(self.p_line[0], self.parts, r=True)
             return self.p_line
 
@@ -240,8 +250,26 @@ class Guides(se.Serialize):
         self.base_ctrl.attr('sy').set(1)
         self.base_ctrl.attr('sz').set(1)
 
+    def set_mirror(self, enabled=False):
+        if enabled:
+            self.mirror_enabled = True
+            self.base_ctrl.attr('mirror_enable').set(1)
+            self.mirror()
+        else:
+            self.mirror_enabled = False
+            self.base_ctrl.attr('mirror_enable').set(0)
+            try:
+                child = self.get_child_module(obj=self.dup_guide_mirror_grp, search_string='MIRROR_GRP')
+                if child:
+                    pm.parent(child, w=True)
+                pm.delete(self.dup_guide_mirror_grp, self.hidden_guide_offset_grp)
+            except:
+                pass
+
     def mirror(self):
         """TODO: give the possibility to mirror on any axis. ATM only mirror from X to -X"""
+        #self.set_mirror()
+
         mirror_grp = pm.ls("MIRROR_GRP")
         if not mirror_grp:
             mirror_grp = pm.createNode('transform', n="MIRROR_GRP")
@@ -294,41 +322,41 @@ class Guides(se.Serialize):
             pm.delete(pm.parentConstraint(og_ctrl, dup_ctrl.getParent()))
 
         # create mirror grp to define what way the mirror module should be mirrored to
-        dup_guide_mirror_grp = pm.createNode('transform',
+        self.dup_guide_mirror_grp = pm.createNode('transform',
                                              n=self.module_name + '___' + dup_guide.prefix + "MIRROR_GRP")
-        dup_guide_mirror_grp.attr('sx').set(dup_axis)
+        self.dup_guide_mirror_grp.attr('sx').set(dup_axis)
 
-        pm.parent(dup_guide.base_ctrl, dup_guide_mirror_grp)
+        pm.parent(dup_guide.base_ctrl, self.dup_guide_mirror_grp)
 
-        hidden_guide_offset_grp = pm.createNode('transform',
+        self.hidden_guide_offset_grp = pm.createNode('transform',
                                                 n=self.module_name + '___' + dup_guide.prefix + "HIDOFFSET_GRP")
 
         if self.get_parent():
-            tools.matrix_constraint(self.get_parent(), hidden_guide_offset_grp, mo=False)
+            tools.matrix_constraint(self.get_parent(), self.hidden_guide_offset_grp, mo=False)
 
         pm.parent(dup_guide.base_ctrl, w=True)
-        pm.parent(hidden_guide.base_ctrl, hidden_guide_offset_grp)
+        pm.parent(hidden_guide.base_ctrl, self.hidden_guide_offset_grp)
         for attr in 'trs':
             pm.connectAttr(self.base_ctrl + '.' + attr, hidden_guide.base_ctrl + '.' + attr)
-        dup_mirror_offset_grp = pm.createNode('transform',
+        self.dup_mirror_offset_grp = pm.createNode('transform',
                                               n=self.module_name + '___' + dup_guide.prefix + "MIRROROFFSET_GRP")
         if dup_parent:
-            pm.delete(pm.parentConstraint(dup_parent, dup_mirror_offset_grp))
+            pm.delete(pm.parentConstraint(dup_parent, self.dup_mirror_offset_grp))
             d_matrix = pm.createNode('decomposeMatrix', n=prefix + 'mirror_d_matrix')
             pm.connectAttr(dup_parent + '.worldMatrix', d_matrix + '.inputMatrix')
             for attr in 'trs':
-                pm.connectAttr(d_matrix + '.o' + attr, dup_mirror_offset_grp + '.' + attr)
-            dup_mirror_offset_grp.attr('t').disconnect()
-            dup_mirror_offset_grp.attr('r').disconnect()
-            dup_mirror_offset_grp.attr('s').disconnect()
+                pm.connectAttr(d_matrix + '.o' + attr, self.dup_mirror_offset_grp + '.' + attr)
+            self.dup_mirror_offset_grp.attr('t').disconnect()
+            self.dup_mirror_offset_grp.attr('r').disconnect()
+            self.dup_mirror_offset_grp.attr('s').disconnect()
 
-        pm.parent(dup_mirror_offset_grp, dup_guide_mirror_grp)
-        pm.makeIdentity(dup_mirror_offset_grp, s=True, apply=True)
-        pm.select(dup_mirror_offset_grp)
+        pm.parent(self.dup_mirror_offset_grp, self.dup_guide_mirror_grp)
+        pm.makeIdentity(self.dup_mirror_offset_grp, s=True, apply=True)
+        pm.select(self.dup_mirror_offset_grp)
         DeleteHistory()
         pm.select(None)
 
-        pm.parent(dup_guide.base_ctrl, dup_mirror_offset_grp)
+        pm.parent(dup_guide.base_ctrl, self.dup_mirror_offset_grp)
 
         for og_ctrl, hid_ctrl in zip(self.controllers, hidden_guide.controllers):
             tools.matrix_constraint(og_ctrl, hid_ctrl)
@@ -343,7 +371,7 @@ class Guides(se.Serialize):
             for attr in 'trs':
                 pm.connectAttr(hid_ctrl + '.' + attr, dup_ctrl + '.' + attr)
 
-        pm.parent(dup_guide_mirror_grp, dup_parent)
+        pm.parent(self.dup_guide_mirror_grp, dup_parent)
         dup_guide.parent = dup_parent
         try:
             try:
@@ -359,6 +387,17 @@ class Guides(se.Serialize):
         print dup_guide.base_ctrl.getAttr('module_joints')
         dup_guide.base_ctrl.attr('overrideEnabled').set(1)
         dup_guide.base_ctrl.attr('overrideDisplayType').set(1)
+        pm.select(self.base_ctrl)
+
+    def do_last(self):
+        """META AND MASTER DOESNT USE THIS FUNCTION"""
+        pm.select(None)
+        self.do_parent_line()
+        self.do_parent()
+
+        self.get_module_joints()
+        self.base_one_scale()
+        self.set_controllers_trs()
         pm.select(self.base_ctrl)
 
     @staticmethod
@@ -448,6 +487,33 @@ class Guides(se.Serialize):
         pm.select(None)
         return loc_ctrl, orient_offset, temp_j
 
+    def create_parent_line(self, prefix="new"):
+        """Create a template line between two objects
+        Args:
+            start: str, object to start the line from
+            end: str, object to end the line
+            prefix: str, what to call the new line
+        Returns:
+            dict, curve object and curve offset group
+        """
+        start = self.parent
+        end = self.controllers[0]
+
+        pos1 = pm.xform(start, q=1, t=1, ws=1)
+        pos2 = pm.xform(end, q=1, t=1, ws=1)
+        crv = pm.curve(n=prefix + 'Line_crv', d=1, p=[pos1, pos2])
+        cls1 = pm.cluster(crv + '.cv[0]', n=prefix + 'Line1_cls', wn=[start, start], bs=True)
+        print cls1
+        cls2 = pm.cluster(crv + '.cv[1]', n=prefix + 'Line2_cls', wn=[end, end], bs=True)
+        crv.attr('template').set(1)
+        offset_grp = pm.createNode("transform", name=prefix + 'CrvOffset_grp')
+        offset_grp.attr('inheritsTransform').set(0)
+
+        pm.connectAttr(self.base_ctrl + '.parentMatrix[0]', cls1[0] + '.matrix', force=True)
+        pm.parent(crv, offset_grp)
+
+        return offset_grp, crv
+
 
 class DrawArm(Guides):
     """
@@ -519,14 +585,7 @@ class DrawArm(Guides):
         self.controllers.insert(0, clavicle_loc)
         self.controllers.append(elbow_loc)
         self.controllers.append(wrist_loc)
-        pm.select(None)
-        self.do_parent_line()
-        self.do_parent()
-
-        self.get_module_joints()
-        self.base_one_scale()
-        self.set_controllers_trs()
-        pm.select(self.base_ctrl)
+        self.do_last()
 
         return self
 
@@ -577,13 +636,7 @@ class DrawEye(Guides):
 
         self.controllers.append(end_loc)
         self.controllers.append(lookat_loc)
-        pm.select(None)
-        self.p_line = self.do_parent_line()
-        self.do_parent()
-        self.get_module_joints()
-        self.base_one_scale()
-        self.set_controllers_trs()
-        pm.select(self.base_ctrl)
+        self.do_last()
 
         return self
 
@@ -677,10 +730,7 @@ class DrawFoot(Guides):
         self.center_loc_ctrl = pm.rename(self.center_loc_ctrl,
                                          self.center_loc_ctrl.replace('_guide', 'Ankle_guide'))
         self.center_joint = pm.rename(self.center_joint, self.center_joint.replace('_jnt', 'Ankle_jnt'))
-        self.get_module_joints()
-        self.base_one_scale()
-        self.set_controllers_trs()
-        pm.select(self.base_ctrl)
+        self.do_last()
 
         return self
 
@@ -760,12 +810,7 @@ class DrawLimb(Guides):
 
         self.controllers.append(elbow_loc)
         self.controllers.append(wrist_loc)
-        self.do_parent_line()
-        self.do_parent()
-        self.get_module_joints()
-        self.base_one_scale()
-        self.set_controllers_trs()
-        pm.select(self.base_ctrl)
+        self.do_last()
 
         return self
 
@@ -994,14 +1039,7 @@ class DrawSpine(Guides):
 
         self.base_ctrl.attr('rx').set(-90)
         pm.parent(lines, self.parts, r=True)
-        self.do_parent_line()
-        pm.select(None)
-
-        self.do_parent()
-        self.get_module_joints()
-        self.base_one_scale()
-        self.set_controllers_trs()
-        pm.select(self.base_ctrl)
+        self.do_last()
 
         return self
 
@@ -1053,13 +1091,6 @@ class DrawNeck(Guides):
 
         self.base_ctrl.attr('rx').set(-90)
         pm.parent(lines, self.parts, r=True)
-        self.do_parent_line()
-        pm.select(None)
-
-        self.do_parent()
-        self.get_module_joints()
-        self.base_one_scale()
-        self.set_controllers_trs()
-        pm.select(self.base_ctrl)
+        self.do_last()
 
         return self

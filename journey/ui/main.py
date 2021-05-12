@@ -106,6 +106,7 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         self.setObjectName(self.__class__.UI_NAME)
 
         self.setMinimumSize(200, 100)
+        self.loaded_file = ''
 
         # self.setWindowFlags(QtCore.Qt.Tool)
         # self.setAttribute(QtCore.Qt.WA_DeleteOnClose)  # Delete window when it's closed to free resources
@@ -116,7 +117,7 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         self.create_layout()
         self.create_connections()
         self.create_ws_control()
-        self.temp_load_preset()  # TODO: REMOVE THIS LINE AND FUNCTION WHEN DONE TESTING
+        #self.temp_load_preset()  # TODO: REMOVE THIS LINE AND FUNCTION WHEN DONE TESTING
 
     def create_menu(self):
         # Create a menubar
@@ -157,6 +158,10 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
 
     def create_widgets(self):
         """Create controls for the window"""
+        self.loaded_file_label = QtWidgets.QLabel('File: ' + self.loaded_file,
+                                                  wordWrap=True,
+                                                  alignment=QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
+
         # create tab widget
         self.tab_widget = QtWidgets.QTabWidget()
 
@@ -170,6 +175,12 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         self.config_tab = self.tab_widget.widget(0)
         self.guides_tab = self.tab_widget.widget(1)
 
+        self.warning_label = QtWidgets.QLabel("ATT: Guides created when this window is closed will not be registered. "
+                                              "Having guides in your scene when opening "
+                                              "the editor will also not be registered",
+                                              wordWrap=True,
+                                              alignment=QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
+
 
         self.setWindowTitle("tab demo")
         # self.tab_widget.addTab("Config")
@@ -177,7 +188,6 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
 
     def create_layout(self):
         """Layout all the controls in corresponding layout"""
-
         # create menu layout
         menu_layout = QtWidgets.QGridLayout()
         menu_layout.addWidget(self.main_menu, 0, 0)
@@ -185,6 +195,16 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         line.setFrameShape(QtWidgets.QFrame.HLine)
         line.setFrameShadow(QtWidgets.QFrame.Sunken)
         menu_layout.addWidget(line)
+
+        # loaded file layout
+        lf_layout = QtWidgets.QGridLayout()
+        lf_layout.setContentsMargins(2, 2, 2, 2)
+        lf_layout.addWidget(self.loaded_file_label)
+
+        # warning layout
+        warning_layout = QtWidgets.QGridLayout()
+        warning_layout.setContentsMargins(2, 2, 2, 2)
+        warning_layout.addWidget(self.warning_label)
 
         # tab layout
         tab_layout = QtWidgets.QHBoxLayout()
@@ -196,7 +216,12 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         main_layout.setContentsMargins(2, 2, 2, 2)
 
         main_layout.addLayout(menu_layout)
+        main_layout.addSpacing(10)
+        main_layout.addLayout(lf_layout)
         main_layout.addLayout(tab_layout)
+
+        main_layout.addSpacing(10)
+        main_layout.addLayout(warning_layout)
 
         main_layout.addStretch()
 
@@ -207,6 +232,7 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         self.load_preset_m.triggered.connect(self.menu_load_preset)
         self.new_m.triggered.connect(self.menu_new)
         self.save_m.triggered.connect(self.menu_save)
+        self.save_as_m.triggered.connect(self.menu_save_as)
         self.restore_window_m.triggered.connect(self.menu_restore_window)
 
     def create_ws_control(self):
@@ -235,40 +261,81 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
     def simple_print(self):
         print "yuuh"
 
+    def clear_ui(self):
+        self.set_loaded_file(None)
+        self.config_tab.char_name_le.setText('')
+        self.config_tab.filepath_le.setText('')
+        self.config_tab.filepath_builder_le.setText('')
+        self.config_tab.filepath_skin_le.setText('')
+        self.guides_tab.list_wdg.clear()
+        pm.select(None)
+
     def menu_new(self):
         confirm = pm.confirmDialog(title='Confirm', message='Are you sure?', button=['Yes', 'No'],
                                    defaultButton='Yes', cancelButton='No', dismissString='No')
         if confirm == 'Yes':
 
-            result = pm.promptDialog(
-                title='Character Name',
-                message='Enter Name:',
-                button=['OK'],
-                defaultButton='OK')
+            self.clear_ui()
 
-            if result == 'OK':
-                name = pm.promptDialog(query=True, text=True)
-                if name:
-                    self.character_name = name
-                else:
-                    pm.warning("No value entered!")
 
-                self.set_ui_title()
+            # result = pm.promptDialog(
+            #     title='Character Name',
+            #     message='Enter Name:',
+            #     button=['OK'],
+            #     defaultButton='OK')
+            #
+            # if result == 'OK':
+            #     name = pm.promptDialog(query=True, text=True)
+            #     if name:
+            #         self.character_name = name
+            #
+            #     else:
+            #         pm.warning("No value entered!")
+            #
+            #     self.set_ui_title()
 
-    def menu_save(self):
+    def get_json_values(self):
         json_value = {
             "char_name": self.config_tab.char_name_le.text(),
             "model_file": self.config_tab.filepath_le.text(),
             "builder_file": self.config_tab.filepath_builder_le.text(),
             "skin_weights_dir": self.config_tab.filepath_skin_le.text(),
         }
-        print json_value    
-        p = os.path.dirname(presets.__file__)
-        print p
-        with open(p + "\{}.json".format(self.config_tab.get_character_name()), 'w') as json_file:
-            json.dump(json_value, json_file)
-        # save(self.settings)
-        # print self.settings
+        return json_value
+
+    def save_dialog(self, json_value):
+        filename = QtWidgets.QFileDialog.getSaveFileName(self, "Save Guides",
+                                                         "",
+                                                         "JSON (*.json)",
+                                                         "JSON (*.json)")
+        if filename[0]:
+            with open(filename[0], 'w') as json_file:
+                json.dump(json_value, json_file)
+                # save(self.settings)
+                # print self.settings
+            self.set_loaded_file(filename[0])
+
+    def menu_save(self):
+        json_value = self.get_json_values()
+        if self.loaded_file:
+            with open(self.loaded_file, 'w') as json_file:
+                json.dump(json_value, json_file)
+        else:
+            self.save_dialog(json_value)
+
+    def menu_save_as(self):
+        json_value = self.get_json_values()
+        self.save_dialog(json_value)
+
+    def set_loaded_file(self, file):
+        if file:
+            self.loaded_file = file
+            self.loaded_file_name = file.split('/')[-1]
+            self.loaded_file_label.setText('File: ' + self.loaded_file)
+        else:
+            self.loaded_file = ''
+            self.loaded_file_name = ''
+            self.loaded_file_label.setText('File: ')
 
     def menu_load_preset(self):
         filepath, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self, "Select File",
@@ -276,49 +343,53 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
                                                                           self.LOAD_PRESET_FILTERS,
                                                                           self.selected_load_preset_filter)
         if filepath:
-            print filepath
             with open(filepath, 'r') as json_file:
                 jdata = json.load(json_file)
                 try:
                     self.config_tab.char_name_le.setText(jdata['char_name'])
+                    self.character_name = jdata['char_name']
+                    try:
+                        self.config_tab.filepath_le.setText(jdata['model_file'])
+                    except:
+                        pass
+                    try:
+                        self.config_tab.filepath_builder_le.setText(jdata['builder_file'])
+                    except:
+                        pass
+                    try:
+                        self.config_tab.filepath_skin_le.setText(jdata['skin_dir'])
+                    except:
+                        pass
+                    self.set_loaded_file(filepath)
                 except:
-                    pass
-                try:
-                    self.config_tab.filepath_le.setText(jdata['model_file'])
-                except:
-                    pass
-                try:
-                    self.config_tab.filepath_builder_le.setText(jdata['builder_file'])
-                except:
-                    pass
-                try:
-                    self.config_tab.filepath_skin_le.setText(jdata['skin_dir'])
-                except:
-                    pass
+                    pm.confirmDialog(title='File Error!', message='Loaded file is not a valid preset file',
+                                     button=['Ok'], defaultButton='Ok')
 
     def temp_load_preset(self):
         """TODO: REMOVE FUNCTION LATER. ONLY USED FOR LOADING A PRESET WHEN SHOWING UI"""
-        filepath = r'C:\Users\nilas\Documents\maya\2019\modules\journey_framework\journey\presets\bingbong.json'
+        filepath = 'C:/Users/nilas/Documents/maya/2019/modules/journey_framework/journey/presets/bingbong.json'
         if filepath:
-            print filepath
             with open(filepath, 'r') as json_file:
                 jdata = json.load(json_file)
                 try:
                     self.config_tab.char_name_le.setText(jdata['char_name'])
+                    self.character_name = jdata['char_name']
+                    try:
+                        self.config_tab.filepath_le.setText(jdata['model_file'])
+                    except:
+                        pass
+                    try:
+                        self.config_tab.filepath_builder_le.setText(jdata['builder_file'])
+                    except:
+                        pass
+                    try:
+                        self.config_tab.filepath_skin_le.setText(jdata['skin_dir'])
+                    except:
+                        pass
+                    self.set_loaded_file(filepath)
                 except:
-                    pass
-                try:
-                    self.config_tab.filepath_le.setText(jdata['model_file'])
-                except:
-                    pass
-                try:
-                    self.config_tab.filepath_builder_le.setText(jdata['builder_file'])
-                except:
-                    pass
-                try:
-                    self.config_tab.filepath_skin_le.setText(jdata['skin_dir'])
-                except:
-                    pass
+                    pm.confirmDialog(title='File Error!', message='Loaded file is not a valid preset file',
+                                     button=['Ok'], defaultButton='Ok')
 
     def menu_restore_window(self):
         confirm = pm.confirmDialog(title='Confirm', message='Are you sure?', button=['Yes', 'No'],
