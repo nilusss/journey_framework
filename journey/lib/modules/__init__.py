@@ -1,11 +1,11 @@
-# import arm
-# import eye
-# import eyebrow
-# import eyelid
-# import finger
-# import foot
-# import limb
-# import lips
-# import meta
-# import neck
-# import spine
+import arm
+import eye
+import eyebrow
+import eyelid
+import finger
+import foot
+import limb
+import lips
+import meta
+import neck
+import spine

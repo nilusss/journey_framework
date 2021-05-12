@@ -2,7 +2,7 @@ import json
 from PySide2 import QtWidgets, QtGui, QtCore
 from shiboken2 import wrapInstance, getCppPointer
 import maya.OpenMayaUI as mui
-import journey.ui.builder as builder
+import journey.ui.builder as builder_ui
 import fnmatch
 import pymel.core as pm
 import maya.cmds as mc
@@ -10,7 +10,7 @@ import traceback
 from functools import partial
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin, MayaQDockWidget
 from maya.OpenMayaUI import MQtUtil
-reload(builder)
+reload(builder_ui)
 
 
 class GuidesTabUI(QtWidgets.QWidget):
@@ -57,6 +57,8 @@ class GuidesTabUI(QtWidgets.QWidget):
         self.dropdown_mirror_menu.addItems(['off', 'on'])
         self.settings_delete_btn = QtWidgets.QPushButton('Delete guide')
 
+        self.rig_guides_btn = QtWidgets.QPushButton('Rig Guides')
+
 
     def create_layout(self):
         """Layout all the controls in corresponding layout"""
@@ -87,6 +89,9 @@ class GuidesTabUI(QtWidgets.QWidget):
         main_layout.addWidget(self.settings_frame)
         self.settings_frame.hide()
 
+        main_layout.setSpacing(10)
+        main_layout.addWidget(self.rig_guides_btn)
+
         main_layout.setSpacing(5)
         main_layout.addStretch()
 
@@ -98,6 +103,7 @@ class GuidesTabUI(QtWidgets.QWidget):
         self.list_wdg.itemSelectionChanged.connect(self.on_change_item_selection)
         self.settings_delete_btn.clicked.connect(self.on_delete_guide)
         self.dropdown_mirror_menu.activated.connect(self.on_change_mirror)
+        self.rig_guides_btn.clicked.connect(self.on_rig_guides)
 
     def get_mirror_state(self):
         return self.selected_guide_inst.base_ctrl.getAttr('mirror_enable')
@@ -107,6 +113,15 @@ class GuidesTabUI(QtWidgets.QWidget):
     ###############
     def simple_print(self):
         print "yuuh"
+
+    def on_rig_guides(self):
+        pm.undoInfo(openChunk=True)
+        import journey.lib.builder as builder
+        reload(builder)
+
+        l = builder.Builder().build()
+        pm.undoInfo(closeChunk=True)
+        del l
 
     def on_change_mirror(self):
         state = self.dropdown_mirror_menu.currentIndex()
@@ -159,7 +174,7 @@ class GuidesTabUI(QtWidgets.QWidget):
 
     def open_builder(self):
         #builder.BuilderUI(self)
-        builder_ui = builder.show(self)
+        build_ui = builder_ui.show(self)
 
     def save_guides(self):
         guide_dict_list = []
