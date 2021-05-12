@@ -232,7 +232,6 @@ class GuidesTabUI(QtWidgets.QWidget):
         except:
             pass
 
-
     #############
     # SLOTS END #
     #############

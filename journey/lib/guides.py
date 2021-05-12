@@ -398,6 +398,7 @@ class Guides(se.Serialize):
         self.get_module_joints()
         self.base_one_scale()
         self.set_controllers_trs()
+        self.set_mirror(self.mirror_enabled)
         pm.select(self.base_ctrl)
 
     @staticmethod
@@ -595,6 +596,7 @@ class DrawEye(Guides):
                  prefix,
                  parent='',
                  space_switches=''):
+        super(DrawEye, self).__init__()
         self.prefix = prefix
         self.module_name = re.findall('[A-Z][^A-Z]*', str(self.__class__.__name__))[-1]
         self.name = self.module_name + '___' + prefix
@@ -646,6 +648,7 @@ class DrawFoot(Guides):
                  prefix,
                  parent='',
                  space_switches=''):
+        super(DrawFoot, self).__init__()
         self.prefix = prefix
         self.module_name = re.findall('[A-Z][^A-Z]*', str(self.__class__.__name__))[-1]
         self.name = self.module_name + '___' + prefix
@@ -757,6 +760,7 @@ class DrawLimb(Guides):
                  prefix,
                  parent='',
                  space_switches=''):
+        super(DrawLimb, self).__init__()
         self.prefix = prefix
         self.module_name = re.findall('[A-Z][^A-Z]*', str(self.__class__.__name__))[-1]
         self.name = self.module_name + '___' + prefix
@@ -858,6 +862,7 @@ class DrawMeta(Guides):
                  parent='',
                  space_switches='',
                  amount=4):
+        super(DrawMeta, self).__init__()
         self.prefix = prefix
         self.module_name = re.findall('[A-Z][^A-Z]*', str(self.__class__.__name__))[-1]
         self.name = self.module_name + '___' + prefix
