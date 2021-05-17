@@ -12,19 +12,10 @@ import journey.lib.utils.tools as tools
 import journey.lib.layout as lo
 from maya.cmds import DeleteHistory
 import journey.lib.modules as mdls
+reload(mdls)
 reload(ctrl)
 reload(tools)
 reload(lo)
-reload(mdls.arm)
-reload(mdls.eye)
-# reload(mdls.eyebrow)
-reload(mdls.eyelid)
-reload(mdls.finger)
-reload(mdls.foot)
-reload(mdls.lips)
-reload(mdls.meta)
-reload(mdls.neck)
-reload(mdls.spine)
 
 
 class Builder():

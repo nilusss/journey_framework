@@ -7,6 +7,7 @@ import journey.ui.base_ws_control as bwsc
 import journey.lib.serialization as se
 import pymel.core as pm
 import maya.cmds as mc
+import maya.mel as mel
 import traceback
 from functools import partial
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin, MayaQDockWidget
@@ -18,8 +19,8 @@ reload(se)
 
 class SetupTabUI(QtWidgets.QWidget):
 
-    FILE_FILTER = "Maya (*.ma;*.mb);;Maya ASCII (*.ma);;Maya Binary (*.mb);; Fbx (*.fbx;*.FBX)"
-    selected_filter = "Maya (*.ma, *.mb)"
+    FILE_FILTER = "Maya (*.ma;*.mb;*.fbx;*.FBX);;Maya ASCII (*.ma);;Maya Binary (*.mb);; Fbx (*.fbx;*.FBX)"
+    selected_filter = "Maya (*.ma;*.mb;*.fbx;*.FBX)"
 
     def __init__(self, parent):
         super(SetupTabUI, self).__init__(parent)
@@ -169,27 +170,37 @@ class SetupTabUI(QtWidgets.QWidget):
         self.parent_inst.set_ui_title()
 
     def on_import_model(self):
-        model_file = self.filepath_le.text()
-        if model_file:
-            before = pm.ls(assemblies=True)
-            pm.importFile(model_file, namespace=self.get_character_name() + '')
-            after = pm.ls(assemblies=True)
-            # Using the before and after variable
-            # to determine the model node
-            model_node = set(after).difference(before).pop()
-            node = pm.createNode('transform', n=self.get_character_name() + '_temp_grp')
-            pm.parent(model_node, node)
+        grp_exists = pm.ls("*_TEMP_grp")
+        if not grp_exists:
+            model_file = self.filepath_le.text()
+            file_type = model_file.split('.')[-1]
+            if model_file:
+                if 'fbx' in file_type:
+                    before = pm.ls(assemblies=True)
+                    mel.eval('FBXImport -f "{}";'.format(model_file))
+                    after = pm.ls(assemblies=True)
+                    model_node = set(after).difference(before).pop()
+                    group_node = pm.createNode('transform', n=self.get_character_name() + '_temp_grp')
+                    pm.parent(model_node, group_node)
+                else:
+                    group_name = self.get_character_name() + '_TEMP_grp'
+                    model_node = pm.importFile(model_file, i=True, groupReference=True, groupName=group_name, returnNewNodes=True,)
+                    group_node = pm.PyNode(group_name)
+                try:
+                    pm.displaySurface(group_node, xRay=True)
 
-            pm.displaySurface(node, xRay=True)
+                    group_node.attr('overrideEnabled').set(1)
+                    group_node.attr('overrideDisplayType').set(2)
+                    pm.displaySurface(group_node, xRay=True)
+                except:
+                    pass
+                pm.select(None)
 
-            node.attr('overrideEnabled').set(1)
-            node.attr('overrideDisplayType').set(2)
-
-
-
+            else:
+                pm.warning("No model file available!")
         else:
-            pm.warning("No model file available")
-
+            pm.warning("Model already in scene!")
+            
     def on_import_builder(self):
         filepath = self.filepath_builder_le.text()
         if pm.ls('*_base'):

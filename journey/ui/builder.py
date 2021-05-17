@@ -120,6 +120,19 @@ class BuilderUI(QtWidgets.QDialog):
     def draw_guide(self, guide_type, prefix):
         try:
             mc.undoInfo(openChunk=True, chunkName="drawguide")
+            if not pm.ls('Master___*'):
+                if guide_type not in 'DrawMaster':
+                    master = guides.DrawMaster(prefix='c_root').draw()
+                    try:
+                        print "IN"
+                        guide_list_item = QtWidgets.QListWidgetItem()
+                        guide_list_item.setData(QtCore.Qt.UserRole, master)
+                        guide_list_item.setText('c_root')
+                        self.parent_inst.list_wdg.addItem(guide_list_item)
+                    except Exception as e:
+                        print str(e)
+                    master.radius_ctrl.attr('ty').set(3)
+                    pm.select(master.controllers[0])
             exec ('guide = guides.{}(prefix=\'{}\').draw()'.format(guide_type, prefix))
             return guide
         except Exception as e:

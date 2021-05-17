@@ -1,5 +1,6 @@
 from PySide2 import QtWidgets, QtGui, QtCore
 from shiboken2 import wrapInstance, getCppPointer
+import webbrowser
 import journey.lib.guides as guides
 import maya.OpenMayaUI as mui
 import journey.ui.base_ws_control as bwsc
@@ -147,8 +148,8 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
 
         # Help menu section
         self.help_menu_m = self.main_menu.addMenu("Help")
-        self.about_m = QtWidgets.QAction('About', self)
-        self.author_m = QtWidgets.QAction('Author', self)
+        self.about_m = QtWidgets.QAction('About...', self)
+        self.author_m = QtWidgets.QAction('Author...', self)
         self.help_m = QtWidgets.QAction('Help...', self)
 
         self.help_menu_m.addAction(self.about_m)
@@ -234,6 +235,9 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         self.save_m.triggered.connect(self.menu_save)
         self.save_as_m.triggered.connect(self.menu_save_as)
         self.restore_window_m.triggered.connect(self.menu_restore_window)
+        self.about_m.triggered.connect(self.menu_about)
+        self.author_m.triggered.connect(self.menu_author)
+        self.help_m.triggered.connect(self.menu_help)
 
     def create_ws_control(self):
         self.ws_control_inst = bwsc.BaseWorkspaceControl(self.get_ws_control_name())
@@ -274,25 +278,7 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         confirm = pm.confirmDialog(title='Confirm', message='Are you sure?', button=['Yes', 'No'],
                                    defaultButton='Yes', cancelButton='No', dismissString='No')
         if confirm == 'Yes':
-
             self.clear_ui()
-
-
-            # result = pm.promptDialog(
-            #     title='Character Name',
-            #     message='Enter Name:',
-            #     button=['OK'],
-            #     defaultButton='OK')
-            #
-            # if result == 'OK':
-            #     name = pm.promptDialog(query=True, text=True)
-            #     if name:
-            #         self.character_name = name
-            #
-            #     else:
-            #         pm.warning("No value entered!")
-            #
-            #     self.set_ui_title()
 
     def get_json_values(self):
         json_value = {
@@ -328,14 +314,14 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         self.save_dialog(json_value)
 
     def set_loaded_file(self, file):
-        if file:
+        def set_file(file):
             self.loaded_file = file
             self.loaded_file_name = file.split('/')[-1]
             self.loaded_file_label.setText('File: ' + self.loaded_file)
+        if file:
+            set_file(file)
         else:
-            self.loaded_file = ''
-            self.loaded_file_name = ''
-            self.loaded_file_label.setText('File: ')
+            set_file('')
 
     def menu_load_preset(self):
         os.path.dirname(presets.__file__)
@@ -343,6 +329,16 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
                                                                           "",
                                                                           self.LOAD_PRESET_FILTERS,
                                                                           self.selected_load_preset_filter)
+        self.load_preset(filepath)
+
+
+    def temp_load_preset(self):
+        """TODO: REMOVE FUNCTION LATER. ONLY USED FOR LOADING A PRESET WHEN SHOWING UI"""
+        filepath = 'C:/Users/nilas/Documents/maya/2019/modules/journey_framework/journey/presets/bingbong.json'
+        self.load_preset(filepath)
+        
+    
+    def load_preset(self, filepath):
         if filepath:
             with open(filepath, 'r') as json_file:
                 jdata = json.load(json_file)
@@ -367,37 +363,23 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
                     pm.confirmDialog(title='File Error!', message='Loaded file is not a valid preset file',
                                      button=['Ok'], defaultButton='Ok')
 
-    def temp_load_preset(self):
-        """TODO: REMOVE FUNCTION LATER. ONLY USED FOR LOADING A PRESET WHEN SHOWING UI"""
-        filepath = 'C:/Users/nilas/Documents/maya/2019/modules/journey_framework/journey/presets/bingbong.json'
-        if filepath:
-            with open(filepath, 'r') as json_file:
-                jdata = json.load(json_file)
-                try:
-                    self.config_tab.char_name_le.setText(jdata['char_name'])
-                    self.character_name = jdata['char_name']
-                    try:
-                        self.config_tab.filepath_le.setText(jdata['model_file'])
-                    except:
-                        pass
-                    try:
-                        self.config_tab.filepath_builder_le.setText(jdata['builder_file'])
-                    except:
-                        pass
-                    try:
-                        self.config_tab.filepath_skin_le.setText(jdata['skin_dir'])
-                    except:
-                        pass
-                    self.set_loaded_file(filepath)
-                except:
-                    pm.confirmDialog(title='File Error!', message='Loaded file is not a valid preset file',
-                                     button=['Ok'], defaultButton='Ok')
-
     def menu_restore_window(self):
         confirm = pm.confirmDialog(title='Confirm', message='Are you sure?', button=['Yes', 'No'],
                                    defaultButton='Yes', cancelButton='No', dismissString='No')
         if confirm == 'Yes':
             d = show()
+
+    def menu_about(self):
+        url = 'https://github.com/nilusss/journey_framework#readme'
+        webbrowser.open(url, new=0, autoraise=True)
+
+    def menu_author(self):
+        url = 'https://github.com/nilusss'
+        webbrowser.open(url, new=0, autoraise=True)
+
+    def menu_help(self):
+        url = 'https://github.com/nilusss/journey_framework/wiki'
+        webbrowser.open(url, new=0, autoraise=True)
 
     #############
     # SLOTS END #
