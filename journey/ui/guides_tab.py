@@ -4,7 +4,7 @@ from shiboken2 import wrapInstance, getCppPointer
 import maya.OpenMayaUI as mui
 import journey.ui.builder as builder_ui
 import journey.lib.guides as guides
-import journey.lib.builder as builder
+
 import fnmatch
 import pymel.core as pm
 import maya.cmds as mc
@@ -14,7 +14,7 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin, MayaQDockWidget
 from maya.OpenMayaUI import MQtUtil
 reload(builder_ui)
 reload(guides)
-reload(builder)
+
 
 
 
@@ -61,6 +61,9 @@ class GuidesTabUI(QtWidgets.QWidget):
         self.dropdown_mirror_label = QtWidgets.QLabel("Mirror:")
         self.dropdown_mirror_menu = QtWidgets.QComboBox()
         self.dropdown_mirror_menu.addItems(['off', 'on'])
+        self.dropdown_ant_label = QtWidgets.QLabel("Annotation:")
+        self.dropdown_ant_menu = QtWidgets.QComboBox()
+        self.dropdown_ant_menu.addItems(['off', 'on'])
         self.settings_delete_btn = QtWidgets.QPushButton('Delete guide')
 
         self.rig_guides_btn = QtWidgets.QPushButton('Rig Guides')
@@ -73,6 +76,8 @@ class GuidesTabUI(QtWidgets.QWidget):
         settings_layout.addWidget(self.settings_label, 0, 0)
         settings_layout.addWidget(self.dropdown_mirror_label, 1, 0)
         settings_layout.addWidget(self.dropdown_mirror_menu, 1, 1)
+        settings_layout.addWidget(self.dropdown_ant_label, 2, 0)
+        settings_layout.addWidget(self.dropdown_ant_menu, 2, 1)
         settings_layout.addWidget(self.settings_delete_btn, 3, 0)
         self.settings_frame.setLayout(settings_layout)
 
@@ -109,11 +114,15 @@ class GuidesTabUI(QtWidgets.QWidget):
         self.list_wdg.currentItemChanged.connect(self.on_change_item_selection)
         self.settings_delete_btn.clicked.connect(self.on_delete_guide)
         self.dropdown_mirror_menu.activated.connect(self.on_change_mirror)
+        self.dropdown_ant_menu.activated.connect(self.on_change_ant)
         self.rig_guides_btn.clicked.connect(self.on_rig_guides)
         self.refresh_btn.clicked.connect(self.check_if_guides_exists)
 
     def get_mirror_state(self):
         return self.selected_guide_inst.base_ctrl.getAttr('mirror_enable')
+
+    def get_ant_state(self):
+        return self.selected_guide_inst.base_ctrl.getAttr('display_annotation')
 
     ###############
     # SLOTS START #
@@ -123,7 +132,8 @@ class GuidesTabUI(QtWidgets.QWidget):
 
     def on_rig_guides(self):
         pm.undoInfo(openChunk=True)
-        
+        import journey.lib.builder as builder
+        reload(builder)
 
         l = builder.Builder().build()
         pm.undoInfo(closeChunk=True)
@@ -141,6 +151,19 @@ class GuidesTabUI(QtWidgets.QWidget):
                 mc.undoInfo(openChunk=True, chunkName=self.selected_guide_inst.name + "_mirrorOff")
                 self.selected_guide_inst.set_mirror(False)
                 mc.undoInfo(closeChunk=True, chunkName=self.selected_guide_inst.name + "_mirrorOff")
+
+    def on_change_ant(self):
+        state = self.dropdown_ant_menu.currentIndex()
+        if state:
+            if self.selected_guide_inst:
+                mc.undoInfo(openChunk=True, chunkName=self.selected_guide_inst.name + "_antOn")
+                self.selected_guide_inst.base_ctrl.attr('display_annotation').set(1)
+                mc.undoInfo(closeChunk=True, chunkName=self.selected_guide_inst.name + "_antOn")
+        else:
+            if self.selected_guide_inst:
+                mc.undoInfo(openChunk=True, chunkName=self.selected_guide_inst.name + "_antOff")
+                self.selected_guide_inst.base_ctrl.attr('display_annotation').set(0)
+                mc.undoInfo(closeChunk=True, chunkName=self.selected_guide_inst.name + "_antOff")
 
 
     def on_change_selection_in_viewport(self):
@@ -209,7 +232,13 @@ class GuidesTabUI(QtWidgets.QWidget):
         print "## DONE ##"
 
     def on_delete_guide(self):
-        pass
+        if self.selected_guide_inst:
+            self.selected_guide_inst.delete_guide()
+            print "SELECTED INST " + str(self.selected_guide_inst)
+            object_row = self.list_wdg.row(self.list_wdg.currentItem())
+            del self.selected_guide_inst
+            self.list_wdg.takeItem(object_row)
+
 
     def open_builder(self):
         #builder.BuilderUI(self)
@@ -272,15 +301,27 @@ class GuidesTabUI(QtWidgets.QWidget):
             self.settings_label.setText('Settings for: ' + self.list_wdg.currentItem().text())
             self.selected_guide_inst = self.list_wdg.currentItem().data(QtCore.Qt.UserRole)
             if self.get_mirror_state():
-                index = self.dropdown_mirror_menu.findText("on", QtCore.Qt.MatchFixedString)
+                mir_index = self.dropdown_mirror_menu.findText("on", QtCore.Qt.MatchFixedString)
                 print "mirror is on"
 
             else:
                 print "mirror is off"
-                index = self.dropdown_mirror_menu.findText("off", QtCore.Qt.MatchFixedString)
+                mir_index = self.dropdown_mirror_menu.findText("off", QtCore.Qt.MatchFixedString)
             try:
-                if index >= 0:
-                    self.dropdown_mirror_menu.setCurrentIndex(index)
+                if mir_index >= 0:
+                    self.dropdown_mirror_menu.setCurrentIndex(mir_index)
+            except:
+                pass
+            if self.get_ant_state():
+                ant_index = self.dropdown_ant_menu.findText("on", QtCore.Qt.MatchFixedString)
+                print "ant is on"
+
+            else:
+                print "ant is off"
+                ant_index = self.dropdown_ant_menu.findText("off", QtCore.Qt.MatchFixedString)
+            try:
+                if ant_index >= 0:
+                    self.dropdown_ant_menu.setCurrentIndex(ant_index)
             except:
                 pass
         except:

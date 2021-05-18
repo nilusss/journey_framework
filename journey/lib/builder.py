@@ -11,11 +11,49 @@ import journey.lib.utils.shapes as shapes
 import journey.lib.utils.tools as tools
 import journey.lib.layout as lo
 from maya.cmds import DeleteHistory
-import journey.lib.modules as mdls
-reload(mdls)
+#import journey.lib.modules as mdls
+
+#from journey.lib.modules import arm, eye, eyebrow, eyelid, finger, foot, limb, lips, meta, neck, spine
+
+import journey.lib.modules.limb as limb
+import journey.lib.modules.arm as arm
+import journey.lib.modules.eye as eye
+import journey.lib.modules.eyebrow as eyebrow
+import journey.lib.modules.eyelid as eyelid
+import journey.lib.modules.finger as finger
+import journey.lib.modules.foot as foot
+import journey.lib.modules.lips as lips
+import journey.lib.modules.meta as meta
+import journey.lib.modules.neck as neck
+import journey.lib.modules.spine as spine
 reload(ctrl)
 reload(tools)
 reload(lo)
+reload(limb)
+reload(arm)
+reload(eye)
+reload(eyebrow)
+reload(eyelid)
+reload(finger)
+reload(foot)
+reload(lips)
+reload(meta)
+reload(neck)
+reload(spine)
+import journey.lib.layout as lo
+import journey.lib.modules.limb as limb
+import journey.lib.modules.arm as arm
+import journey.lib.modules.eye as eye
+import journey.lib.modules.eyebrow as eyebrow
+import journey.lib.modules.eyelid as eyelid
+import journey.lib.modules.finger as finger
+import journey.lib.modules.foot as foot
+import journey.lib.modules.lips as lips
+import journey.lib.modules.meta as meta
+import journey.lib.modules.neck as neck
+import journey.lib.modules.spine as spine
+
+
 
 
 class Builder():
@@ -229,7 +267,7 @@ class Builder():
 
             if get_module == 'Arm':
 
-                arm = mdls.arm.Arm(driven=joints[1::],
+                arm_rig = arm.Arm(driven=joints[1::],
                                    clavicle=joints[0],
                                    spaces=spaces,
                                    parent_joint=parent_joint,
@@ -237,10 +275,11 @@ class Builder():
                                    prefix=prefix,
                                    scale=scale,
                                    base_rig=self.base_rig)
-                arm.create()
+                #arm_rig.__class__ = arm.Arm
+                arm_rig.create()
 
             if get_module == 'Eye':
-                eye = mdls.eye.Eye(eye_center=joints[0],
+                eye_rig = eye.Eye(eye_center=joints[0],
                                    eye_end=joints[1],
                                    look_at=joints[2],
                                    spaces=spaces,
@@ -248,7 +287,7 @@ class Builder():
                                    prefix=prefix,
                                    scale=scale,
                                    base_rig=self.base_rig)
-                eye.create()
+                eye_rig.create()
             if get_module == 'Eyebrow':
                 pass
             if get_module == 'Eyelid':
@@ -262,7 +301,7 @@ class Builder():
                 MODULE AND WAIT FOR LIMB PARENT MODULE TO BE CREATED"""
                 if 'Limb' in pm_name:
                     print 'found parent module'
-                    foot = mdls.foot.Foot(limb.ik_joints[-1],
+                    foot_rig = foot.Foot(limb.ik_joints[-1],
                                           joints[0],
                                           joints[1],
                                           toe_loc,
@@ -276,9 +315,9 @@ class Builder():
                                           prefix=prefix,
                                           scale=scale,
                                           base_rig=self.base_rig)
-                    foot.create()
+                    foot_rig.create()
                 else:
-                    foot = mdls.foot.Foot(joints[0],
+                    foot_rig = foot.Foot(joints[0],
                                           joints[1],
                                           joints[2],
                                           toe_loc,
@@ -286,10 +325,10 @@ class Builder():
                                           prefix=prefix,
                                           scale=scale,
                                           base_rig=self.base_rig)
-                    foot.create()
+                    foot_rig.create()
 
             if get_module == 'Limb':
-                limb = mdls.limb.Limb(driven=joints,
+                limb_rig = limb.Limb(driven=joints,
                                       spaces=spaces,
                                       parent_joint=parent_joint,
                                       stretch=True,
@@ -297,7 +336,8 @@ class Builder():
                                       scale=scale,
                                       base_rig=self.base_rig,
                                       do_spaces_in_limb=True)
-                limb.create()
+                limb_rig.__class__ = limb.Limb
+                limb_rig.create()
                 """WHEN CREATING LIMB CHECK IF FOOT MODULE IS CHILD OF CURRENT MODULE THEN GET IK AND FK CONTROLLERS"""
             if get_module == 'Lips':
                 pass
@@ -305,20 +345,20 @@ class Builder():
                 module.getAttr('splay_up_pos')
                 splay_up_pos = module.getAttr('splay_up_pos')  # define correct splay up position using locator
                 single_joints = module.getAttr('single_joints').split('#')
-                meta = mdls.meta.Meta(driven=single_joints,
+                meta_rig = meta.Meta(driven=single_joints,
                                       splay_up_pos=splay_up_pos,
                                       parent=parent_joint,
                                       prefix=prefix,
                                       scale=scale,
                                       base_rig=self.base_rig)
-                meta.create()
+                meta_rig.create()
                 # check if meta joints have fingers attached.
                 if module.getAttr('finger_joints'):
                     #splay_up_pos = ''  # define correct splay up position using locator
                     #finger_joints = module.getAttr('finger_joints').split('#')
                     prefix = prefix.replace('meta', 'finger')
                     single_joints2 = module.getAttr('single_joints2').split('#')
-                    meta_fingers = mdls.finger.Finger(driven=single_joints2,
+                    meta_fingers_rig = finger.Finger(driven=single_joints2,
                                                       meta_ctrls=meta.meta_ctrls,
                                                       splay=True,
                                                       splay_up_pos=splay_up_pos,
@@ -327,23 +367,23 @@ class Builder():
                                                       prefix=prefix,
                                                       scale=scale,
                                                       base_rig=self.base_rig)
-                    meta_fingers.create()
+                    meta_fingers_rig.create()
             if get_module == 'Neck':
-                neck = mdls.neck.Neck(driven=joints,
+                neck_rig = neck.Neck(driven=joints,
                                       spaces=spaces,
                                       stretch=True,
                                       prefix=prefix,
                                       scale=scale,
                                       base_rig=self.base_rig)
-                neck.create()
+                neck_rig.create()
             if get_module == 'Spine':
-                spine = mdls.spine.Spine(driven=joints,
+                spine_rig = spine.Spine(driven=joints,
                                          stretch=True,
                                          com=True,
                                          prefix=prefix,
                                          scale=scale,
                                          base_rig=self.base_rig)
-                spine.create()
+                spine_rig.create()
 
         pm.select(None)
         return self

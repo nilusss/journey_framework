@@ -47,6 +47,8 @@ class BuilderUI(QtWidgets.QDialog):
         # get all draw classes from guides module to make corresponding buttons
         self.draw_classes = dict([(name, cls) for name, cls in guides.__dict__.items()
                                   if isinstance(cls, type) and "Draw" in name])
+        self.draw_classes.pop('DrawMaster')
+
 
         # draw button
         self.draw_btn = QtWidgets.QPushButton("Draw module")
@@ -56,7 +58,6 @@ class BuilderUI(QtWidgets.QDialog):
         self.radiobutton_01.side = "l_"
 
         self.radiobutton_02 = QtWidgets.QRadioButton("Center")
-        self.radiobutton_02.setChecked(True)
         self.radiobutton_02.side = "c_"
 
         self.radiobutton_03 = QtWidgets.QRadioButton("Right")

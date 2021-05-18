@@ -112,6 +112,7 @@ class Module(se.Serialize):
         self.base_rig = base_rig
 
     def create_structure(self, *args):
+        #super(Module, self).create_structure()
         get_duplicate = pm.ls(self.prefix + '_*')
         if pm.objExists(self.prefix + '_module_grp'):
             pm.error("Module already exists with prefix: " + self.prefix)

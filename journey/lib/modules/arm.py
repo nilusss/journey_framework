@@ -4,12 +4,12 @@ arm module inheriting from limb class
 import pymel.core as pm
 import journey.lib.control as ctrl
 import journey.lib.utils.tools as tools
-import journey.lib.modules.limb as li
 import journey.lib.space_switcher as space
+import journey.lib.modules.limb as li
 reload(ctrl)
 reload(tools)
-reload(li)
 reload(space)
+reload(li)
 import journey.lib.modules.limb as li
 
 
@@ -39,7 +39,12 @@ class Arm(li.Limb):
         self.do_spaces_in_limb = do_spaces_in_limb
 
     def create(self):
-        super(Arm, self).create()
+        try:
+            super(Arm, self).create()
+        except TypeError, e:
+            print "Failure initialising Retrieval --> self: %r"
+            raise e
+
         if self.clavicle:
             clavicle_ctrl = ctrl.Control(prefix=self.prefix + 'Clavicle', trans_to=self.clavicle,
                                          rot_to=self.clavicle, scale=self.scale, rot_shape=False,

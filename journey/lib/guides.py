@@ -14,6 +14,7 @@ from maya.cmds import DeleteHistory
 
 reload(ctrl)
 reload(tools)
+reload(se)
 
 
 class Guides(se.Serialize):
@@ -35,6 +36,16 @@ class Guides(se.Serialize):
         self.mirror_guide_name = ''
         self.mirror_guide_prefix = ''
 
+        # create a new guide instance of same type and match position to original
+        if self.prefix.startswith('l_'):
+            self.mirror_guide_name = self.name.replace('l_', 'r_')
+            self.mirror_guide_prefix = self.prefix.replace('l_', 'r_')
+        elif self.prefix.startswith('r_'):
+            self.mirror_guide_name = self.name.replace('r_', 'l_')
+            self.mirror_guide_prefix = self.prefix.replace('r_', 'l_')
+        else:
+            pass
+
         self.CLASS_NAME = self.__class__.__name__
 
     def serialize(self):
@@ -44,8 +55,6 @@ class Guides(se.Serialize):
     def create(self):
         self.driven_joints = []
         self.controllers = []
-        self.mirror_guide_name = ''
-        self.mirror_guide_prefix = ''
         if pm.ls(self.name + '*'):
             pm.error("Module already exists with prefix: " + self.name)
         self.sel_parent = pm.ls(sl=True, type='transform')
@@ -54,7 +63,13 @@ class Guides(se.Serialize):
             print('Parenting module to world')
             self.sel_parent = None
         elif len(self.sel_parent) == 1:
-            self.sel_parent = self.sel_parent[0]
+            if self.sel_parent[0].endswith('_base'):
+                self.sel_parent = self.sel_parent[0].getAttr('controllers').split('#')[0]
+            else:
+                self.sel_parent = self.sel_parent[0]
+        else:
+            if "c_root" not in self.name:
+                self.parent = pm.ls('Master___c_root_guide')[0]
 
         pm.select(None)
         self.base_guide()
@@ -92,11 +107,14 @@ class Guides(se.Serialize):
         # create annotation to this module:
         self.annotation = pm.annotate(self.base_ctrl, tx=self.base_ctrl, point=(-1, 2, 0))
         self.annotation = pm.listRelatives(self.annotation, parent=True)[0]
-        self.annotation = pm.rename(self.annotation, self.base_ctrl + "_Ant")
+        self.annotation = pm.rename(self.annotation, pm.PyNode(self.base_ctrl).name().replace('_base', "_Ant"))
         pm.parent(self.annotation, self.base_ctrl)
         pm.setAttr(self.annotation + '.text', self.name.split('__')[0] + '_' + self.prefix,
                    type='string')
         self.annotation.attr('template').set(1)
+
+        # control annotation visibility from attr
+        self.base_ctrl.display_annotation.connect(self.annotation.visibility)
 
         self.center_loc_ctrl, self.loc_offset, self.center_joint = self.cv_joint_loc(self.name)
 
@@ -108,7 +126,17 @@ class Guides(se.Serialize):
 
     def delete_guide(self):
         """used for deleting module and mirror module"""
-
+        self.set_mirror(False)
+        child = self.get_child_module(obj=self.base_ctrl, search_string='_base', ad=True)
+        print "THESE" + str(child)
+        try:
+            if child:
+                print child
+                pm.parent(child, 'Master___c_root_guide')
+                pm.select(None)
+        except:
+            pass
+        pm.delete(self.base_ctrl)
     def get_controllers_trs(self):
 
         for ctrl in self.controllers + [self.base_ctrl] + [self.radius_ctrl]:
@@ -187,8 +215,8 @@ class Guides(se.Serialize):
         self.base_ctrl.attr('parent_joint').set(joint)
         return joint
 
-    def get_child_module(self, obj, search_string='_base'):
-        child_module = pm.PyNode(obj).getChildren(type='transform')
+    def get_child_module(self, obj, search_string='_base', ad=False):
+        child_module = pm.PyNode(obj).getChildren(type='transform', ad=ad)
         child_module = [match for match in child_module if search_string in match.name()]
         if child_module:
             #self.base_ctrl.attr('parent_module').set(self.parent_module[0])
@@ -271,9 +299,10 @@ class Guides(se.Serialize):
         self.base_ctrl.attr('sz').set(1)
 
     def set_mirror(self, enabled=False):
+        print "SETTING MIRROR"
         if 'c_' in self.prefix:
             return pm.warning('Can\'t mirror \"Center\" objects!')
-        if enabled:
+        elif enabled:
             self.mirror_enabled = True
             self.base_ctrl.attr('mirror_enable').set(1)
             self.mirror()
@@ -289,37 +318,71 @@ class Guides(se.Serialize):
             """TODO: CHECK FOR MIRROR GRP IN THE BASE CONTROL INSTEAD OF DUP_GUIDE_MIRROR_GRP YA DUMDUM\
                 unparent child module if any make"""
             try:
-                child = self.get_child_module(obj=self.mirror_guide_base_ctrl, search_string='MIRROR_GRP')
+                child = self.get_child_module(obj=self.mirror_guide_base_ctrl, search_string='MIRROR_GRP', ad=True)
+                children = self.get_child_module(obj=self.mirror_guide_base_ctrl, search_string='_base', ad=True)
+                print "CHILDREN AAAAAAAAAAAH"
+                print self.mirror_guide_base_ctrl
+                print child
+                print children
+            except:
+                pass
+            try:
                 if child:
                     print child
-                    pm.parent(child, w=True)
+                    pm.parent(child, 'Master___c_root_guide')
+            except:
+                pass
+            # try:
+            #     if children:
+            #         for child in children:
+            #             if child.endswith('_base'):
+            #                 print child
+            #                 pm.parent(child, w=True)
+            # except:
+            #     pass
+            try:
+                pm.delete(self.dup_guide_mirror_grp)
             except:
                 pass
             try:
-                children = self.get_child_module(obj=self.mirror_guide_base_ctrl, search_string='_base')
-                if children:
-                    for child in children:
-                        if child.endswith('_base'):
-                            print child
-                            pm.parent(child, w=True)
+                pm.delete(self.hidden_guide_offset_grp)
             except:
                 pass
             try:
-                """TODO:Check if it is turned off on base control controlling the mirroring. have attr name on mirror base 
-                put this try function and the one below in if statement to test"""
+                pm.delete(self.mirror_guide_base_ctrl)
+            except:
+                pass
+            try:
+                del_nodes = []
 
-                pm.delete(self.dup_guide_mirror_grp, self.hidden_guide_offset_grp, self.mirror_guide_base_ctrl)
+                del_nodes.extend(pm.ls("{}HIDDEN*".format(self.mirror_guide_name)))
+                del_nodes.extend(pm.ls("{}mirror*".format(self.mirror_guide_prefix)))
+                del_nodes.extend(pm.ls("{}HIDDEN*".format(self.mirror_guide_prefix)))
+                print "DELETING THESE NODES " + str(del_nodes)
+                match_prefix = [self.mirror_guide_prefix + 'HIDDEN']
+                match_name = [self.mirror_guide_prefix + 'mirror',
+                              self.mirror_guide_name + 'HIDDEN']
             except:
                 pass
+            for n in del_nodes:
+                if self.mirror_guide_name:
+                    if any(word in n.name() for word in match_name):
+                        try:
+                            pm.delete(n)
+                        except:
+                            pass
+                if self.mirror_guide_prefix:
+                    if any(word in n.name() for word in match_prefix):
+                        try:
+                            pm.delete(n)
+                        except:
+                            pass
             try:
-                unused_nodes = pm.ls("{}HIDDEN*".format(self.mirror_guide_name))
-                unused_nodes2 = pm.ls("{}mirror*".format(self.mirror_guide_prefix))
-                unused_nodes3 = pm.ls("{}HIDDEN*".format(self.mirror_guide_prefix))
-                print unused_nodes2
-                print unused_nodes
-                pm.delete(unused_nodes, unused_nodes2, unused_nodes3)
+                pass
             except:
                 pass
+
+
             try:
                 del self.mirror_guide
             except:
@@ -389,6 +452,8 @@ class Guides(se.Serialize):
             print og_ctrl
             print dup_ctrl.getParent()
             pm.delete(pm.parentConstraint(og_ctrl, dup_ctrl.getParent()))
+
+
 
         # create mirror grp to define what way the mirror module should be mirrored to
         self.dup_guide_mirror_grp = pm.createNode('transform',
@@ -461,6 +526,7 @@ class Guides(se.Serialize):
 
         if 'Foot' in self.module_name:
             dup_guide.set_parent()
+            pm.parent(dup_guide.base_ctrl, self.dup_mirror_offset_grp)
         print dup_guide.base_ctrl.getAttr('module_joints')
         dup_guide.base_ctrl.attr('overrideEnabled').set(1)
         dup_guide.base_ctrl.attr('overrideDisplayType').set(1)
@@ -575,8 +641,11 @@ class Guides(se.Serialize):
         Returns:
             dict, curve object and curve offset group
         """
-        start = self.parent
-        end = self.controllers[0]
+        print self.parent
+        start = pm.PyNode(self.parent).name()
+        end = pm.PyNode(self.controllers[0]).name()
+        print start
+        print end
 
         pos1 = pm.xform(start, q=1, t=1, ws=1)
         pos2 = pm.xform(end, q=1, t=1, ws=1)
@@ -738,6 +807,7 @@ class DrawFoot(Guides):
 
     def draw(self):
         self.create()
+
         pm.select(None)
 
         string_attr_list = ['toe_loc', 'heel_loc']
@@ -811,6 +881,7 @@ class DrawFoot(Guides):
         self.center_loc_ctrl = pm.rename(self.center_loc_ctrl,
                                          self.center_loc_ctrl.replace('_guide', 'Ankle_guide'))
         self.center_joint = pm.rename(self.center_joint, self.center_joint.replace('_jnt', 'Ankle_jnt'))
+
         self.do_last()
 
         return self
@@ -1239,7 +1310,10 @@ def get_guides_in_scene():
 
         print "\n\n\nNEW"
         if 'limb' in guide.base_ctrl.name():
-            print guide.mirror_guide_base_ctrl.split('_base')[0]
+            try:
+                print guide.mirror_guide_base_ctrl.split('_base')[0]
+            except:
+                pass
 
         print guide.module_name
         print guide.prefix

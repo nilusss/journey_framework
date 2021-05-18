@@ -15,8 +15,8 @@ reload(ctrl)
 reload(tools)
 reload(kine)
 reload(space)
-reload(lo)
-import journey.lib.layout as lo
+# reload(lo)
+# import journey.lib.layout as lo
 
 
 class Limb(lo.Module):
@@ -30,11 +30,12 @@ class Limb(lo.Module):
                  base_rig=None,
                  do_spaces_in_limb=True
                  ):
-
         self.CLASS_NAME = self.__class__.__name__
 
         self.driven = driven
         self.spaces = spaces
+        if spaces:
+            self.spaces = tools.list_check(spaces)
         self.parent_joint = parent_joint
         self.stretch = stretch
         self.prefix = prefix
@@ -49,12 +50,14 @@ class Limb(lo.Module):
         self.arm_ik = ''
         self.arm_fk = ''
         self.do_spaces_in_limb = do_spaces_in_limb
-        if self.spaces:
-            self.spaces = tools.list_check(spaces)
 
     def create(self, *args):
         # create module from parent class
-        super(Limb, self).create_structure()
+        try:
+            super(Limb, self).create_structure()
+        except TypeError, e:
+            print "Failure initialising Retrieval --> self: %r"
+            raise e
 
         self.offset_joint = pm.listRelatives(self.driven[0], parent=True)
         if self.offset_joint:
