@@ -242,6 +242,14 @@ class Guides(se.Serialize):
             else:
                 self.base_ctrl.attr('controllers').set(j)
 
+    def set_fingers_controllers(self):
+        for j in self.fingers_controllers:
+            value = self.base_ctrl.getAttr('fingers_controllers')
+            if value:
+                self.base_ctrl.attr('fingers_controllers').set(value + '#' + j)
+            else:
+                self.base_ctrl.attr('fingers_controllers').set(j)
+
     def add_space_switches(self, spaces=[]):
         spaces = tools.list_check(spaces)
         for s in spaces:
@@ -453,7 +461,12 @@ class Guides(se.Serialize):
             print dup_ctrl.getParent()
             pm.delete(pm.parentConstraint(og_ctrl, dup_ctrl.getParent()))
 
-
+        # above loop but for fingers
+        try:
+            for og_ctrl, dup_ctrl in zip(self.fingers_controllers, dup_guide.fingers_controllers):
+                pm.delete(pm.parentConstraint(og_ctrl, dup_ctrl.getParent()))
+        except:
+            pass
 
         # create mirror grp to define what way the mirror module should be mirrored to
         self.dup_guide_mirror_grp = pm.createNode('transform',
@@ -498,10 +511,21 @@ class Guides(se.Serialize):
         print self.controllers
         print dup_guide.controllers
         print hidden_guide.controllers
+        try:
+            print self.fingers_controllers
+        except:
+            pass
         print "##DONE##"
 
         for og_ctrl, hid_ctrl in zip(self.controllers, hidden_guide.controllers):
             tools.matrix_constraint(og_ctrl, hid_ctrl)
+
+        # above function but for fingers
+        try:
+            for og_ctrl, hid_ctrl in zip(self.fingers_controllers, hidden_guide.fingers_controllers):
+                tools.matrix_constraint(og_ctrl, hid_ctrl)
+        except:
+            raise
 
         for attr in 'trs':
             pm.connectAttr(hidden_guide.base_ctrl + '.' + attr, dup_guide.base_ctrl + '.' + attr)
@@ -512,6 +536,14 @@ class Guides(se.Serialize):
         for hid_ctrl, dup_ctrl in zip(hidden_guide.controllers, dup_guide.controllers):
             for attr in 'trs':
                 pm.connectAttr(hid_ctrl + '.' + attr, dup_ctrl + '.' + attr)
+
+        # above function but for fingers
+        try:
+            for hid_ctrl, dup_ctrl in zip(hidden_guide.fingers_controllers, dup_guide.fingers_controllers):
+                for attr in 'trs':
+                    pm.connectAttr(hid_ctrl + '.' + attr, dup_ctrl + '.' + attr)
+        except:
+            raise
 
         pm.parent(self.dup_guide_mirror_grp, dup_parent)
         dup_guide.parent = dup_parent
@@ -617,7 +649,7 @@ class Guides(se.Serialize):
         pm.select(None)
         loc_ctrl.attr('ry').set(0)
 
-        temp_j = pm.joint(name=ctrl_name + '_jnt', p=[0, 0, 0], r=0.01)
+        temp_j = pm.joint(name=ctrl_name + '_jnt', p=[0, 0, 0], rad=0.5)
         temp_j2 = pm.joint(name=ctrl_name + '_jnt', p=[0, 0, 2])
         pm.select(loc_ctrl)
         pm.toggle(localAxis=True)
@@ -788,6 +820,158 @@ class DrawEye(Guides):
         self.do_last()
 
         return self
+
+
+class DrawFinger(Guides):
+    """TODO: Add finger function to draw finger joints from meta guides."""
+    # used in the ui to check for variables that should be able to be set in the settings panel
+    amount = None
+
+    def __init__(self,
+                 prefix,
+                 parent='',
+                 space_switches='',
+                 amount=4):
+        super(DrawFinger, self).__init__()
+        self.prefix = prefix
+        self.module_name = re.findall('[A-Z][^A-Z]*', str(self.__class__.__name__))[-1]
+        self.name = self.module_name + '___' + prefix
+        self.driven_joints = []
+        self.controllers = []
+        self.parent = parent
+        self.space_switches = space_switches
+        self.amount = amount
+        self.fingers_controllers = []
+        self.ctrl_positions = {}
+
+    def draw(self):
+        self.create()
+        pm.select(None)
+
+        self.center_loc_ctrl = pm.rename(self.center_loc_ctrl, self.center_loc_ctrl.replace('_guide', 'A_guide'))
+        self.center_joint = pm.rename(self.center_joint, self.center_joint.replace('_jnt', 'A_jnt'))
+        self.loc_offset.attr('ry').set(-180)
+
+        trans_mult = 0
+        lines = []
+        for i in range(0):
+            i += 1
+            alpha = i + 1
+            trans_mult += 0.5
+            meta_loc, meta_offset, meta_joint = self.cv_joint_loc(self.name + tools.int_to_letter(alpha))
+            meta_offset.attr('tz').set(trans_mult)
+            meta_offset.attr('ry').set(-180)
+
+            pm.parent(meta_offset, self.base_ctrl)
+            self.driven_joints.append(meta_joint)
+            self.controllers.append(meta_loc)
+
+            print meta_loc
+            grp, line = tools.create_line(self.controllers[i - 1], meta_loc,
+                                          self.controllers[i - 1] + '_crv')
+            lines.append(grp)
+            pm.parent(grp, self.parts, r=True)
+
+        self.base_ctrl.attr('ry').set(90)
+
+        self.do_parent_line()
+        pm.select(None)
+
+        # splay_up_pos = ctrl.Control(prefix=self.prefix + 'splay_pos',
+        #                             scale=0.2,
+        #                             parent=self.base_ctrl,
+        #                             shape='diamond',
+        #                             channels=['v']).create()
+        # try:
+        #     pm.delete(pm.parentConstraint(self.controllers[0], self.controllers[-1], splay_up_pos.get_offset()))
+        # except:
+        #     pass
+        #
+        # splay_up_pos.get_offset().attr('ty').set(1.5)
+        # pm.addAttr(self.base_ctrl, longName='splay_up_pos', dataType='string')
+        # self.base_ctrl.attr('splay_up_pos').set(splay_up_pos.get_ctrl())
+
+        self.do_parent()
+        for j in self.driven_joints:
+            value = self.base_ctrl.getAttr('module_joints')
+            if value:
+                self.base_ctrl.attr('module_joints').set(value + '.' + j)
+            else:
+                self.base_ctrl.attr('module_joints').set(j)
+        self.base_one_scale()
+        self.add_fingers()
+
+        pm.select(self.base_ctrl)
+        # self.controllers.append(splay_up_pos.get_ctrl())
+
+        return self
+
+    def add_fingers(self):
+        pm.addAttr(self.base_ctrl, longName='finger_joints', dataType='string')
+        pm.addAttr(self.base_ctrl, longName='fingers_controllers', dataType='string')
+        # loop through every meta controller and create a 4 chain finger (incl end joint)
+        prefix = self.module_name + '___' + self.prefix.replace('meta', 'finger')
+        first_finger_joints = []
+        module_joints = ''
+        self.fingers_controllers
+        for i, ctrl in enumerate(self.controllers):
+            lines = []
+            trans_mult = 0.5
+            finger_joints = []
+            self.finger_controls = []
+            module_joints += self.driven_joints[i]
+            for integer in range(self.amount - 1):
+                finger_loc, finger_offset, finger_joint = self.cv_joint_loc(prefix + tools.int_to_letter(i)
+                                                                            + tools.int_to_letter(integer))
+                if integer == 0:
+                    print 'FIRST INTEGER'
+                    pm.delete(pm.parentConstraint(ctrl, finger_offset))
+                    b = pm.aimConstraint(finger_loc, self.driven_joints[i],
+                                         upVector=[0, 0, 0], worldUpType='none', mo=True)
+
+                    pm.parent(finger_offset, self.controllers[i])
+                    finger_offset.attr('tx').set(0.50)
+                    finger_joints.append(finger_joint)
+                    self.finger_controls.append(finger_loc)
+                    self.fingers_controllers.append(finger_loc)
+                    pm.parent(finger_offset, self.base_ctrl)
+                    grp, line = tools.create_line(self.controllers[i], finger_loc,
+                                                  self.controllers[i] + '_crv')
+                    lines.append(grp)
+                    pm.parent(grp, self.parts, r=True)
+                    first_finger_joints.append(finger_joint)
+                    module_joints += '#' + finger_joint
+                else:
+                    print 'NOOOOOT FIRST INTEGER'
+
+                    pm.delete(pm.parentConstraint(self.finger_controls[integer - 1], finger_offset))
+                    b = pm.aimConstraint(finger_loc, finger_joints[integer - 1],
+                                         upVector=[0, 0, 0], worldUpType='none', mo=True)
+                    pm.parent(finger_offset, self.finger_controls[integer - 1])
+                    finger_offset.attr('tx').set(trans_mult)
+                    pm.parent(finger_offset, self.base_ctrl)
+                    grp, line = tools.create_line(self.finger_controls[integer - 1], finger_loc,
+                                                  self.finger_controls[integer - 1] + '_crv')
+                    lines.append(grp)
+                    pm.parent(grp, self.parts, r=True)
+                    finger_joints.append(finger_joint)
+                    self.finger_controls.append(finger_loc)
+                    self.fingers_controllers.append(finger_loc)
+                    module_joints += '#' + finger_joint
+
+        if first_finger_joints:
+            for j in first_finger_joints:
+                value = self.base_ctrl.getAttr('finger_joints')
+                if value:
+                    self.base_ctrl.attr('finger_joints').set(value + '#' + j)
+                else:
+                    self.base_ctrl.attr('finger_joints').set(j)
+        self.base_ctrl.attr('module_joints').set(module_joints)
+        self.set_controllers_trs()
+        self.set_module_controllers()
+        self.set_fingers_controllers()
+
+        pm.select(self.base_ctrl)
 
 
 class DrawFoot(Guides):
@@ -992,11 +1176,15 @@ class DrawMaster(Guides):
 
         # tools.lock_channels(self.base_ctrl, channels=['s'])
         tools.unlock_channels(self.base_ctrl, channels=['v'])
+        tools.lock_channels(self.center_loc_ctrl, channels=['t','r','s','v'])
+
+
 
         pm.select(None)
 
         self.get_module_joints()
         self.base_one_scale()
+        self.set_module_controllers()
         self.set_controllers_trs()
         pm.select(self.base_ctrl)
 
@@ -1005,6 +1193,8 @@ class DrawMaster(Guides):
 
 class DrawMeta(Guides):
     """TODO: Add finger function to draw finger joints from meta guides."""
+    # used in the ui to check for variables that should be able to be set in the settings panel
+    amount = None
 
     def __init__(self,
                  prefix,
@@ -1087,15 +1277,17 @@ class DrawMeta(Guides):
 
     def add_fingers(self):
         pm.addAttr(self.base_ctrl, longName='finger_joints', dataType='string')
+        pm.addAttr(self.base_ctrl, longName='fingers_controllers', dataType='string')
         # loop through every meta controller and create a 4 chain finger (incl end joint)
         prefix = self.module_name + '___' + self.prefix.replace('meta', 'finger')
         first_finger_joints = []
         module_joints = ''
+        self.fingers_controllers = []
         for i, ctrl in enumerate(self.controllers):
             lines = []
             trans_mult = 0.5
             finger_joints = []
-            finger_controls = []
+            self.finger_controls = []
             module_joints += '.' + self.driven_joints[i]
             for integer in range(4):
                 finger_loc, finger_offset, finger_joint = self.cv_joint_loc(prefix + tools.int_to_letter(i)
@@ -1109,7 +1301,8 @@ class DrawMeta(Guides):
                     pm.parent(finger_offset, self.controllers[i])
                     finger_offset.attr('tx').set(1.25)
                     finger_joints.append(finger_joint)
-                    finger_controls.append(finger_loc)
+                    self.finger_controls.append(finger_loc)
+                    self.fingers_controllers.append(finger_loc)
                     pm.parent(finger_offset, self.base_ctrl)
                     grp, line = tools.create_line(self.controllers[i], finger_loc,
                                                   self.controllers[i] + '_crv')
@@ -1120,18 +1313,19 @@ class DrawMeta(Guides):
                 else:
                     print 'NOOOOOT FIRST INTEGER'
 
-                    pm.delete(pm.parentConstraint(finger_controls[integer - 1], finger_offset))
+                    pm.delete(pm.parentConstraint(self.finger_controls[integer - 1], finger_offset))
                     b = pm.aimConstraint(finger_loc, finger_joints[integer - 1],
                                          upVector=[0, 0, 0], worldUpType='none', mo=True)
-                    pm.parent(finger_offset, finger_controls[integer - 1])
+                    pm.parent(finger_offset, self.finger_controls[integer - 1])
                     finger_offset.attr('tx').set(trans_mult)
                     pm.parent(finger_offset, self.base_ctrl)
-                    grp, line = tools.create_line(finger_controls[integer - 1], finger_loc,
-                                                  finger_controls[integer - 1] + '_crv')
+                    grp, line = tools.create_line(self.finger_controls[integer - 1], finger_loc,
+                                                  self.finger_controls[integer - 1] + '_crv')
                     lines.append(grp)
                     pm.parent(grp, self.parts, r=True)
                     finger_joints.append(finger_joint)
-                    finger_controls.append(finger_loc)
+                    self.finger_controls.append(finger_loc)
+                    self.fingers_controllers.append(finger_loc)
                     module_joints += '#' + finger_joint
 
         if first_finger_joints:
@@ -1144,11 +1338,15 @@ class DrawMeta(Guides):
         self.base_ctrl.attr('module_joints').set(module_joints)
         self.set_controllers_trs()
         self.set_module_controllers()
+        self.set_fingers_controllers()
 
         pm.select(self.base_ctrl)
 
 
 class DrawSpine(Guides):
+    # used in the ui to check for variables that should be able to be set in the settings panel
+    amount = None
+
     def __init__(self,
                  prefix,
                  parent='',
@@ -1200,6 +1398,9 @@ class DrawSpine(Guides):
 
 
 class DrawNeck(Guides):
+    # used in the ui to check for variables that should be able to be set in the settings panel
+    amount = None
+
     def __init__(self,
                  prefix,
                  parent='',
@@ -1284,6 +1485,10 @@ def get_guides_in_scene():
         dup_guide_mirror_grp = module.getAttr('dup_guide_mirror_grp')
         hidden_guide_offset_grp = module.getAttr('hidden_guide_offset_grp')
         mirror_guide_base_ctrl = module.getAttr('mirror_guide_base_ctrl')
+        try:
+            fingers_controllers = module.getAttr('fingers_controllers')
+        except:
+            pass
 
 
         exec('guide = Draw{}(prefix=\'{}\')'.format(module_namespace, custom_name))
@@ -1294,6 +1499,10 @@ def get_guides_in_scene():
         guide.radius_ctrl = radius_ctrl
         try:
             guide.controllers = controllers.split('#')
+        except:
+            pass
+        try:
+            guide.fingers_controllers = fingers_controllers.split('#')
         except:
             pass
         guide.mirror_enable = mirror_enable
@@ -1331,6 +1540,10 @@ def get_guides_in_scene():
             print guide.mirror_guide_base_ctrl
             print guide.mirror_guide_name
             print guide.mirror_guide_prefix
+        except:
+            pass
+        try:
+            print guide.fingers_controllers
         except:
             pass
         object_list.append(guide)

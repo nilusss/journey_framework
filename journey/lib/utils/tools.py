@@ -63,6 +63,25 @@ def xyz_to_vector3d(alpha):
     return vector3d
 
 
+def get_geo(model_grp=''):
+
+    #geo_list = [mc.listRelatives(o, p=1)[0] for o in mc.listRelatives(model_grp, ad=1, type='mesh')]
+    geo_list = [o for o in pm.listRelatives(model_grp, ad=1, type='transform')]
+
+    return geo_list
+
+
+def get_joints(root_joint='c_root_result_jnt'):
+
+    joint_list = [o for o in pm.listRelatives(root_joint, ad=1, type='joint')]
+    try:
+        joint_list.remove(root_joint)
+    except:
+        pass
+    return joint_list
+
+
+
 def rename_shape(transform):
     """Find shapes in transform and rename to transform name +Shape
     """

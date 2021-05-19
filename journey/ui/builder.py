@@ -23,6 +23,23 @@ def get_maya_window():
     return wrapInstance(long(ptr), QtWidgets.QWidget)
 
 
+def all_members(a_class):
+    try:
+        # Try getting all relevant classes in method-resolution order
+        mro = list(a_class.__mro__)
+    except AttributeError:
+        # If a class has no _ _mro_ _, then it's a classic class
+        def getmro(a_class, recurse):
+            mro = [a_class]
+            for base in a_class.__bases__: mro.extend(recurse(base, recurse))
+            return mro
+        mro = getmro(a_class, getmro)
+    mro.reverse()
+    members = {}
+    for someClass in mro: members.update(vars(someClass))
+    return members
+
+
 class BuilderUI(QtWidgets.QDialog):
     def __init__(self, parent):
 
@@ -41,6 +58,8 @@ class BuilderUI(QtWidgets.QDialog):
         self.create_controls()
         self.create_layout()
         self.create_connections()
+        # set line edit prefix text
+        self.change_selection()
 
     def create_controls(self):
         """Create controls for the window"""
@@ -75,15 +94,43 @@ class BuilderUI(QtWidgets.QDialog):
         self.list_wdg.setCurrentRow(0)
         self.list_wdg.setMaximumHeight(300)
 
-        # set line edit prefix text
-        self.change_selection()
+        self.settings_label = QtWidgets.QLabel("Settings for: ")
+        self.amount_label = QtWidgets.QLabel("Joint Amount: ")
+        self.amount_le = QtWidgets.QLineEdit("4")
 
+
+        self.class_for_amount = []
         for cls in self.draw_classes:
             # create "create" button for each module
             btn = QtWidgets.QPushButton("Create " + str(cls).replace("Draw", "") + " Guides")
             self.buttons.append(btn)
 
+            # get variables for setting panel ## amount
+            exec('gds = guides.{}'.format(cls))
+            get_members = all_members(gds)
+            for membr in get_members.keys():
+                if 'amount' in membr:
+                    self.class_for_amount.append(cls.replace('Draw', ''))
+
+
+        print self.class_for_amount
+
     def create_layout(self):
+        """Layout all the controls in corresponding layout"""
+        self.settings_frame = QtWidgets.QFrame()
+        settings_layout = QtWidgets.QGridLayout()
+        settings_layout.addWidget(self.settings_label, 0, 0)
+        self.settings_frame.setLayout(settings_layout)
+
+        self.amount_frame = QtWidgets.QFrame()
+        amount_layout = QtWidgets.QGridLayout()
+        amount_layout.addWidget(self.amount_label, 1, 0)
+        amount_layout.addWidget(self.amount_le, 1, 1)
+        self.amount_frame.setLayout(amount_layout)
+
+
+        """Settings panel done"""
+
         """Layout all the controls in corresponding layout"""
         radio_layout = QtWidgets.QHBoxLayout()
         radio_layout.setContentsMargins(5, 5, 5, 5)
@@ -104,6 +151,9 @@ class BuilderUI(QtWidgets.QDialog):
         main_layout.addSpacing(10)
         main_layout.addWidget(QtWidgets.QLabel('Modules:'))
         main_layout.addWidget(self.list_wdg)
+        main_layout.addWidget(self.settings_frame)
+        main_layout.addWidget(self.amount_frame)
+        self.settings_frame.hide()
         main_layout.addWidget(self.draw_btn)
 
         # for btn in self.buttons:
@@ -134,7 +184,21 @@ class BuilderUI(QtWidgets.QDialog):
                         print str(e)
                     master.radius_ctrl.attr('ty').set(3)
                     pm.select(master.controllers[0])
-            exec ('guide = guides.{}(prefix=\'{}\').draw()'.format(guide_type, prefix))
+            a = prefix
+
+            if self.has_amount:
+                print 'ass'
+                try:
+                    amount = int(self.amount_le.text())
+                    exec('guide_am = guides.{0}(prefix=\'{1}\', amount={2}).draw()'.format(guide_type,
+                                                                                               prefix,
+                                                                                               amount))
+                    return guide_am
+                except Exception as e:
+                    raise e
+            else:
+                print "bingonb"
+            exec('guide = guides.{}(prefix=\'{}\').draw()'.format(guide_type, prefix))
             return guide
         except Exception as e:
             raise e
@@ -158,6 +222,17 @@ class BuilderUI(QtWidgets.QDialog):
             self.radiobutton_01.setChecked(True)
             self.radiobutton_02.setChecked(False)
             self.radiobutton_03.setChecked(False)
+
+        self.settings_frame.show()
+        self.settings_label.setText('Settings for: ' + str(prefix))
+
+        if any(x in prefix for x in self.class_for_amount):
+            self.has_amount = True
+            self.amount_frame.show()
+        else:
+            self.amount_frame.hide()
+            self.has_amount = False
+
 
     def on_list_change_prefix(self):
         self.change_selection()

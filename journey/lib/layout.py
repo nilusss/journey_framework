@@ -84,7 +84,7 @@ class Base:
             pm.setAttr(self.global_ctrl.get_ctrl() + '.s' + axis, keyable=0)
 
         self.joints_grp = pm.group(n='joints_grp', em=1, p=self.rig_grp)
-        # mc.hide(self.jointsGrp)
+        pm.hide(self.joints_grp)
         self.modules_grp = pm.group(n='modules_grp', em=1, p=self.rig_grp)
 
         #tools.matrix_constraint(self.offset_ctrl.ctrl_object, self.joints_grp, mo=True)

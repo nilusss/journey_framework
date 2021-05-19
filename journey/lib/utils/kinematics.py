@@ -114,6 +114,7 @@ class IK:
         tools.parent_rm(self.ik_ctrl.get_offset(), self.rig_module, 'controls_grp')
 
         self.ik_hdl_grp = pm.createNode("transform", n=self.prefix + 'HdlOffset_grp')
+        pm.hide(self.ik_hdl_grp)
         self.ik_hdl = pm.ikHandle(n=self.prefix + 'Main_hdl', sol='ikSCsolver',
                                   sj=self.driven[0], ee=self.driven[-1])[0]
         pm.parent(self.ik_hdl, self.ik_hdl_grp)

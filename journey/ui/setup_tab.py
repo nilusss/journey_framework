@@ -154,7 +154,7 @@ class SetupTabUI(QtWidgets.QWidget):
             self.filepath_builder_le.setText(filepath)
 
     def skin_weights_browse(self):
-        filepath, selected_filter = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Skin Weights Dir", "",
+        filepath = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Skin Weights Dir", "",
                                                                                QtWidgets.QFileDialog.ShowDirsOnly)
         if filepath:
             self.filepath_skin_le.setText(filepath)
@@ -186,21 +186,15 @@ class SetupTabUI(QtWidgets.QWidget):
                     group_name = self.get_character_name() + '_TEMP_grp'
                     model_node = pm.importFile(model_file, i=True, groupReference=True, groupName=group_name, returnNewNodes=True,)
                     group_node = pm.PyNode(group_name)
-                try:
-                    pm.displaySurface(group_node, xRay=True)
-
                     group_node.attr('overrideEnabled').set(1)
                     group_node.attr('overrideDisplayType').set(2)
-                    pm.displaySurface(group_node, xRay=True)
-                except:
-                    pass
                 pm.select(None)
 
             else:
                 pm.warning("No model file available!")
         else:
             pm.warning("Model already in scene!")
-            
+
     def on_import_builder(self):
         filepath = self.filepath_builder_le.text()
         if pm.ls('*_base'):

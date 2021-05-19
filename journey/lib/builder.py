@@ -217,6 +217,10 @@ class Builder():
             pm.makeIdentity(p.split('-')[0], r=True, a=True)
             DeleteHistory()
         pm.select(None)
+
+        # constrain root joint to offset controller
+        tools.matrix_constraint(self.base_rig.offset_ctrl.get_ctrl(), 'c_root_result_jnt', mo=True)
+
         # build modules from joints and guides:
         get_modules = pm.ls(assemblies=True)
         # get correct module hierarchy
@@ -293,7 +297,16 @@ class Builder():
             if get_module == 'Eyelid':
                 pass
             if get_module == 'Finger':
-                pass
+                finger_joints = module.getAttr('module_joints').split('#')[0]
+                if finger_joints:
+                    finger_rig = finger.Finger(driven=finger_joints,
+                                               splay=False,
+                                               incl_last_child=False,
+                                               parent=parent_joint,
+                                               prefix=prefix,
+                                               scale=scale,
+                                               base_rig=self.base_rig)
+                    finger_rig.create()
             if get_module == 'Foot':
                 toe_loc = module.getAttr('toe_loc')
                 heel_loc = module.getAttr('heel_loc')
@@ -359,7 +372,7 @@ class Builder():
                     prefix = prefix.replace('meta', 'finger')
                     single_joints2 = module.getAttr('single_joints2').split('#')
                     meta_fingers_rig = finger.Finger(driven=single_joints2,
-                                                      meta_ctrls=meta.meta_ctrls,
+                                                      meta_ctrls=meta_rig.meta_ctrls,
                                                       splay=True,
                                                       splay_up_pos=splay_up_pos,
                                                       incl_last_child=False,

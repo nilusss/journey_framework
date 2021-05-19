@@ -66,7 +66,7 @@ class Meta(lo.Module):
 
         # splay mid and splay end controllers
         pm.delete(pm.parentConstraint(self.driven[0], self.driven[-1], splay_mid_ctrl.get_offset(), st=['x', 'y']))
-        pm.delete(pm.parentConstraint(self.driven[-1], splay_ctrl.get_offset(), st=['x', 'y']))
+        pm.delete(pm.parentConstraint(self.driven[-1], splay_ctrl.get_offset(), st=['y']))
 
         #splay_mid_ctrl.freeze_transforms()
         #splay_ctrl.freeze_transforms()

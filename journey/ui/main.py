@@ -6,6 +6,7 @@ import maya.OpenMayaUI as mui
 import journey.ui.base_ws_control as bwsc
 import journey.ui.setup_tab as setup_tab
 import journey.ui.guides_tab as guides_tab
+import journey.ui.skinning_tab as skinning_tab
 import journey.presets as presets
 import journey.lib.serialization as se
 import pymel.core as pm
@@ -21,6 +22,7 @@ reload(se)
 reload(bwsc)
 reload(setup_tab)
 reload(guides_tab)
+reload(skinning_tab)
 
 
 def value_is_valid(val):
@@ -168,13 +170,16 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
 
         self.config_tab = setup_tab.SetupTabUI(self)
         self.guides_tab = guides_tab.GuidesTabUI(self)
+        self.skinning_tab = skinning_tab.SkinningTabUI(self)
 
         self.tab_widget.addTab(self.config_tab, "Config")
         self.tab_widget.addTab(self.guides_tab, "Guides")
+        self.tab_widget.addTab(self.skinning_tab, "Skinning")
 
         # get widget tab instances and reassign to variables
         self.config_tab = self.tab_widget.widget(0)
         self.guides_tab = self.tab_widget.widget(1)
+        self.skinning_tab = self.tab_widget.widget(2)
 
         self.warning_label = QtWidgets.QLabel("ATT: Guides created when this window is closed will not be registered. "
                                               "Having guides in your scene when opening "
@@ -183,7 +188,7 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
                                               alignment=QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
 
 
-        self.setWindowTitle("tab demo")
+        #self.setWindowTitle("tab demo")
         # self.tab_widget.addTab("Config")
         # self.tab_widget.addTab("Guides")
 
@@ -205,7 +210,7 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         # warning layout
         warning_layout = QtWidgets.QGridLayout()
         warning_layout.setContentsMargins(2, 2, 2, 2)
-        warning_layout.addWidget(self.warning_label)
+        #warning_layout.addWidget(self.warning_label)
 
         # tab layout
         tab_layout = QtWidgets.QHBoxLayout()

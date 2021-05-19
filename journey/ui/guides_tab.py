@@ -61,7 +61,7 @@ class GuidesTabUI(QtWidgets.QWidget):
         self.dropdown_mirror_label = QtWidgets.QLabel("Mirror:")
         self.dropdown_mirror_menu = QtWidgets.QComboBox()
         self.dropdown_mirror_menu.addItems(['off', 'on'])
-        self.dropdown_ant_label = QtWidgets.QLabel("Annotation:")
+        self.dropdown_ant_label = QtWidgets.QLabel("Display Annotation:")
         self.dropdown_ant_menu = QtWidgets.QComboBox()
         self.dropdown_ant_menu.addItems(['off', 'on'])
         self.settings_delete_btn = QtWidgets.QPushButton('Delete guide')
@@ -131,13 +131,42 @@ class GuidesTabUI(QtWidgets.QWidget):
         print "yuuh"
 
     def on_rig_guides(self):
-        pm.undoInfo(openChunk=True)
-        import journey.lib.builder as builder
-        reload(builder)
+        confirm = pm.confirmDialog(title='Rig Guides', message='Rigging the guides will delete all guides in the scene.\n'
+                                                               'Do you want to continue? ',
+                                   button=['Yes', 'No'], defaultButton='Yes',
+                                   cancelButton='No', dismissString='No')
+        if confirm == 'Yes':
+            pm.undoInfo(openChunk=True)
+            import journey.lib.builder as builder
+            reload(builder)
 
-        l = builder.Builder().build()
-        pm.undoInfo(closeChunk=True)
-        del l
+            l = builder.Builder().build()
+            items = []
+            for x in range(self.list_wdg.count()):
+                items.append(self.list_wdg.item(x))
+            for item in items:
+                item_obj = item
+                object_row = self.list_wdg.row(item)
+                if item_obj:
+                    item_obj = item_obj.data(QtCore.Qt.UserRole)
+                    try:
+                        item_obj.delete_guide()
+                    except:
+                        pass
+            sel = pm.ls("*HIDOFFSET_GRP")
+            try:
+                pm.delete(sel)
+            except:
+                pass
+            try:
+                pm.delete("MIRROR_GRP")
+            except:
+                pass
+
+            self.check_if_guides_exists()
+            self.settings_frame.hide()
+            pm.undoInfo(closeChunk=True)
+            del l
 
     def on_change_mirror(self):
         state = self.dropdown_mirror_menu.currentIndex()

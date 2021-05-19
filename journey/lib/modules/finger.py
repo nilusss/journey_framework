@@ -38,6 +38,8 @@ class Finger(lo.Module):
         self.CLASS_NAME = self.__class__.__name__
 
         self.driven = driven
+        if self.driven:
+            self.driven = tools.list_check(self.driven)
         self.meta_ctrls = meta_ctrls
         self.splay = splay
         self.splay_up_pos = splay_up_pos
@@ -54,6 +56,7 @@ class Finger(lo.Module):
         self.meta_f_ctrls_offset = []
         self.meta_f_ctrls = []
         for i, driven in enumerate(self.driven):
+            print driven
             prefix = tools.split_at(driven, '_', 2)
             letter = tools.int_to_letter(i).capitalize()
 
@@ -84,6 +87,7 @@ class Finger(lo.Module):
 
             child_joints = pm.listRelatives(driven, children=True, ad=True, type='joint')
             child_joints.reverse()
+            print child_joints
             if self.incl_last_child is False:
                 del(child_joints[-1])
 
