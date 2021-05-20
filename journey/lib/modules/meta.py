@@ -42,7 +42,7 @@ class Meta(lo.Module):
         super(Meta, self).create_structure()
 
         splay_mid_ctrl = ctrl.Control(prefix=self.prefix + 'SplayMidA',
-                                      scale=self.scale * 0.2,
+                                      scale=self.scale * 1.2,
                                       trans_to=self.splay_up_pos,
                                       rot_to=self.splay_up_pos,
                                       parent=self.controls_grp,
@@ -51,7 +51,7 @@ class Meta(lo.Module):
         splay_mid_ctrl.create()
 
         splay_ctrl = ctrl.Control(prefix=self.prefix + 'SplayA',
-                                  scale=self.scale * 0.2,
+                                  scale=self.scale * 1.2,
                                   trans_to=self.splay_up_pos,
                                   rot_to=self.splay_up_pos,
                                   parent=self.controls_grp,

@@ -407,7 +407,7 @@ class Builder():
                 if module.getAttr('finger_joints'):
                     #splay_up_pos = ''  # define correct splay up position using locator
                     #finger_joints = module.getAttr('finger_joints').split('#')
-                    prefix = prefix.replace('meta', 'finger')
+                    prefix = prefix.replace('meta', 'metaFinger')
                     single_joints2 = module.getAttr('single_joints2').split('#')
                     meta_fingers_rig = finger.Finger(driven=single_joints2,
                                                       meta_ctrls=meta_rig.meta_ctrls,
