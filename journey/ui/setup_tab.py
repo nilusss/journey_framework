@@ -30,7 +30,8 @@ class SetupTabUI(QtWidgets.QWidget):
         self.create_widgets()
         self.create_layout()
         self.create_connections()
-
+        self.get_optionvars()
+        self.set_import_and_rig_btn_state()
 
     def create_widgets(self):
         """Create controls for the window"""
@@ -57,9 +58,9 @@ class SetupTabUI(QtWidgets.QWidget):
         self.filepath_builder_btn = QtWidgets.QPushButton()
         self.import_builder_btn = QtWidgets.QPushButton("Import guides")
         self.filepath_builder_btn.setIcon(QtGui.QIcon(":fileOpen.png"))
-        self.filepath_builder_btn.setToolTip("Select Builder File")
+        self.filepath_builder_btn.setToolTip("Select Guides File")
         self.filepath_builder_label = QtWidgets.QLabel()
-        self.filepath_builder_label.setText("Builder File (*.json)")
+        self.filepath_builder_label.setText("Guides File (*.json)")
         self.filepath_builder_label.setBuddy(self.filepath_le)
 
         # builder filepath
@@ -70,6 +71,8 @@ class SetupTabUI(QtWidgets.QWidget):
         self.filepath_skin_label = QtWidgets.QLabel()
         self.filepath_skin_label.setText("Skin Weights (directory)")
         self.filepath_skin_label.setBuddy(self.filepath_skin_le)
+
+        self.import_and_rig_btn = QtWidgets.QPushButton('Import Everything and Rig!')
 
     def create_layout(self):
         """Layout all the controls in corresponding layout"""
@@ -115,7 +118,7 @@ class SetupTabUI(QtWidgets.QWidget):
         main_layout.addLayout(filepath_skin_layout)
 
         main_layout.addSpacing(10)
-        #main_layout.addWidget(self.save_btn)
+        main_layout.addWidget(self.import_and_rig_btn)
 
         main_layout.setSpacing(5)
         main_layout.addStretch()
@@ -130,34 +133,73 @@ class SetupTabUI(QtWidgets.QWidget):
         self.char_name_le.textChanged.connect(self.set_character_name)
         self.import_model_btn.clicked.connect(self.on_import_model)
         self.import_builder_btn.clicked.connect(self.on_import_builder)
+        self.import_and_rig_btn.clicked.connect(self.full_import_rig)
+
+        # optionvar setters
+        self.char_name_le.editingFinished.connect(self.set_optionvars)
+        self.filepath_le.editingFinished.connect(self.set_optionvars)
+        self.filepath_builder_le.editingFinished.connect(self.set_optionvars)
+        self.filepath_skin_le.editingFinished.connect(self.set_optionvars)
 
     def get_optionvars(self):
         """used to get line edit fields that have been assigned to option vars"""
-        pass
+        if pm.optionVar(exists='Journey_char_name'):
+            self.char_name_le.setText(pm.optionVar(q='Journey_char_name'))
+
+        if pm.optionVar(exists='Journey_model_file'):
+            self.filepath_le.setText(pm.optionVar(q='Journey_model_file'))
+
+        if pm.optionVar(exists='Journey_builder_file'):
+            self.filepath_builder_le.setText(pm.optionVar(q='Journey_builder_file'))
+
+        if pm.optionVar(exists='Journey_skin_weights_dir'):
+            self.filepath_skin_le.setText(pm.optionVar(q='Journey_skin_weights_dir'))
+
+    def set_optionvars(self):
+        pm.optionVar(sv=('Journey_char_name', self.char_name_le.text()))
+        pm.optionVar(sv=('Journey_model_file', self.filepath_le.text()))
+        pm.optionVar(sv=('Journey_builder_file', self.filepath_builder_le.text()))
+        pm.optionVar(sv=('Journey_skin_weights_dir', self.filepath_skin_le.text()))
+
+        self.set_import_and_rig_btn_state()
+
+    def set_import_and_rig_btn_state(self):
+        if self.char_name_le.text() and self.filepath_le.text() and self.filepath_builder_le.text() and self.filepath_skin_le.text():
+            self.import_and_rig_btn.setEnabled(True)
+        else:
+            self.import_and_rig_btn.setEnabled(False)
 
     ###############
     # SLOTS START #
     ###############
-    def simple_print(self):
-        print "yuuh"
+    def full_import_rig(self):
+        if self.char_name_le.text() and self.filepath_le.text() and self.filepath_builder_le.text() and self.filepath_skin_le.text():
+            print 'ass'
+            self.on_import_builder()
+            self.parent_inst.guides_tab.on_rig_guides(skip_dialog=True)
+        else:
+            pm.warning('Some fields are empty!')
 
     def config_browse(self):
         model_filepath, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", "",
                                                                           self.FILE_FILTER, self.selected_filter)
         if model_filepath:
             self.filepath_le.setText(model_filepath)
+            self.set_optionvars()
     
     def builder_browse(self):
         filepath, selected_filter = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", "",
                                                                           ("JSON (*.json)"))
         if filepath:
             self.filepath_builder_le.setText(filepath)
+            self.set_optionvars()
 
     def skin_weights_browse(self):
         filepath = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Skin Weights Dir", "",
                                                                                QtWidgets.QFileDialog.ShowDirsOnly)
         if filepath:
             self.filepath_skin_le.setText(filepath)
+            self.set_optionvars()
 
     def config_save(self):
         self.set_character_name()
@@ -175,12 +217,13 @@ class SetupTabUI(QtWidgets.QWidget):
             model_file = self.filepath_le.text()
             file_type = model_file.split('.')[-1]
             if model_file:
+                pm.undoInfo(openChunk=True, chunkName="importmodel")
                 if 'fbx' in file_type:
                     before = pm.ls(assemblies=True)
                     mel.eval('FBXImport -f "{}";'.format(model_file))
                     after = pm.ls(assemblies=True)
                     model_node = set(after).difference(before).pop()
-                    group_node = pm.createNode('transform', n=self.get_character_name() + '_temp_grp')
+                    group_node = pm.createNode('transform', n=self.get_character_name() + '_TEMP_grp')
                     pm.parent(model_node, group_node)
                 else:
                     group_name = self.get_character_name() + '_TEMP_grp'
@@ -189,9 +232,10 @@ class SetupTabUI(QtWidgets.QWidget):
                     group_node.attr('overrideEnabled').set(1)
                     group_node.attr('overrideDisplayType').set(2)
                 pm.select(None)
-
+                pm.undoInfo(closeChunk=True, chunkName="importmodel")
             else:
                 pm.warning("No model file available!")
+
         else:
             pm.warning("Model already in scene!")
 
@@ -200,6 +244,7 @@ class SetupTabUI(QtWidgets.QWidget):
         if pm.ls('*_base'):
             pm.error("Modules already exists in the scene. Please clean up your scene before importing new guides!")
         elif filepath:
+            pm.undoInfo(openChunk=True, chunkName="importbuilder")
             print filepath
             with open(filepath, 'r') as json_file:
                 jdata = json.load(json_file)
@@ -215,6 +260,8 @@ class SetupTabUI(QtWidgets.QWidget):
                     guide_list_item.setData(QtCore.Qt.UserRole, obj)
                     guide_list_item.setText(obj.prefix)
                     self.parent_inst.guides_tab.list_wdg.addItem(guide_list_item)
+            pm.undoInfo(closeChunk=True, chunkName="importbuilder")
+
         else:
             pm.warning("No builder file!")
 

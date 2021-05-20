@@ -107,10 +107,9 @@ class Finger(lo.Module):
                 if i > 0:
                     tools.matrix_constraint(f_ctrls[i-1].get_ctrl(), f_ctrls[i].get_offset())
                 pm.parent(finger_fk.get_offset(), self.controls_grp)
-
         if self.splay:
             splay_mid_ctrl = ctrl.Control(prefix=self.prefix + 'SplayMidA',
-                                          scale=self.scale * 1.2,
+                                          scale=self.scale * 0.2,
                                           trans_to=self.splay_up_pos,
                                           rot_to=self.splay_up_pos,
                                           parent=self.controls_grp,
@@ -118,19 +117,19 @@ class Finger(lo.Module):
             splay_mid_ctrl.create()
 
             splay_ctrl = ctrl.Control(prefix=self.prefix + 'SplayA',
-                                      scale=self.scale * 1.2,
+                                      scale=self.scale * 0.2,
                                       trans_to=self.splay_up_pos,
                                       rot_to=self.splay_up_pos,
                                       parent=self.controls_grp,
                                       shape='diamond')
             splay_ctrl.create()
 
-            try:
-                pm.parent(self.splay_up_pos, self.parts_grp)
-            except:
-                pass
+            # try:
+            #     pm.parent(self.splay_up_pos, self.parts_grp)
+            # except:
+            #     pass
 
-            # splay mid and splay end controllers
+            # splay mid and splay end controller0
             pm.delete(pm.parentConstraint(self.driven[0], self.driven[-1], splay_mid_ctrl.get_offset(), st=['y']))
             pm.delete(pm.parentConstraint(self.driven[-1], splay_ctrl.get_offset(), st=['y']))
 

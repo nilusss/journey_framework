@@ -35,6 +35,7 @@ class Guides(se.Serialize):
         self.mirror_guide_base_ctrl = ''
         self.mirror_guide_name = ''
         self.mirror_guide_prefix = ''
+        self.fingers_controllers = []
 
         # create a new guide instance of same type and match position to original
         if self.prefix.startswith('l_'):
@@ -139,9 +140,9 @@ class Guides(se.Serialize):
         pm.delete(self.base_ctrl)
     def get_controllers_trs(self):
 
-        for ctrl in self.controllers + [self.base_ctrl] + [self.radius_ctrl]:
+        for ctrl in self.controllers + [self.base_ctrl] + [self.radius_ctrl] + self.fingers_controllers:
             print ctrl
-            self.ctrl_positions[ctrl.name()] = {}
+            self.ctrl_positions[pm.PyNode(ctrl).name()] = {}
             for ch in ['t', 'r', 's']:
                 print ch
                 for axis in ['x', 'y', 'z']:
@@ -453,14 +454,25 @@ class Guides(se.Serialize):
         hidden_guide.base_ctrl.attr('v').unlock()
         hidden_guide.base_ctrl.attr('v').set(0)
 
+        # create mirror grp to define what way the mirror module should be mirrored to
+        self.dup_guide_mirror_grp = pm.createNode('transform',
+                                                  n=self.module_name + '___' + dup_guide.prefix + "MIRROR_GRP")
+        pm.parent(self.dup_guide_mirror_grp, self.parent)
+        self.dup_guide_mirror_grp.attr('sy').set(1)
+        self.dup_guide_mirror_grp.attr('sz').set(1)
+        self.dup_guide_mirror_grp.attr('sx').set(dup_axis)
+        self.base_ctrl.attr('dup_guide_mirror_grp').set(self.dup_guide_mirror_grp)
+        pm.parent(self.dup_guide_mirror_grp, w=True)
+        pm.parent(dup_guide.base_ctrl, self.dup_guide_mirror_grp)
+        dup_guide.base_ctrl.attr('sy').set(1)
+        dup_guide.base_ctrl.attr('sz').set(1)
+        dup_guide.base_ctrl.attr('sx').set(dup_axis)
+
         pm.delete(pm.parentConstraint(self.base_ctrl, dup_guide.base_ctrl))
         print self.controllers
         print dup_guide.controllers
         for og_ctrl, dup_ctrl in zip(self.controllers, dup_guide.controllers):
-            print og_ctrl
-            print dup_ctrl.getParent()
             pm.delete(pm.parentConstraint(og_ctrl, dup_ctrl.getParent()))
-
         # above loop but for fingers
         try:
             for og_ctrl, dup_ctrl in zip(self.fingers_controllers, dup_guide.fingers_controllers):
@@ -468,13 +480,6 @@ class Guides(se.Serialize):
         except:
             pass
 
-        # create mirror grp to define what way the mirror module should be mirrored to
-        self.dup_guide_mirror_grp = pm.createNode('transform',
-                                             n=self.module_name + '___' + dup_guide.prefix + "MIRROR_GRP")
-        self.dup_guide_mirror_grp.attr('sx').set(dup_axis)
-        self.base_ctrl.attr('dup_guide_mirror_grp').set(self.dup_guide_mirror_grp)
-
-        pm.parent(dup_guide.base_ctrl, self.dup_guide_mirror_grp)
 
         self.hidden_guide_offset_grp = pm.createNode('transform',
                                                 n=self.module_name + '___' + dup_guide.prefix + "HIDOFFSET_GRP")
@@ -518,20 +523,42 @@ class Guides(se.Serialize):
         print "##DONE##"
 
         for og_ctrl, hid_ctrl in zip(self.controllers, hidden_guide.controllers):
-            tools.matrix_constraint(og_ctrl, hid_ctrl)
+            pm.delete(pm.parentConstraint(og_ctrl, hid_ctrl.getParent()))
+
+        for og_ctrl, hid_ctrl in zip(self.controllers, hidden_guide.controllers):
+            tools.matrix_constraint(og_ctrl, hid_ctrl, mo=False)
 
         # above function but for fingers
         try:
             for og_ctrl, hid_ctrl in zip(self.fingers_controllers, hidden_guide.fingers_controllers):
-                tools.matrix_constraint(og_ctrl, hid_ctrl)
+                pm.delete(pm.parentConstraint(og_ctrl, hid_ctrl.getParent()))
         except:
-            raise
+            pass
+        try:
+            for og_ctrl, hid_ctrl in zip(self.fingers_controllers, hidden_guide.fingers_controllers):
+                tools.matrix_constraint(og_ctrl, hid_ctrl, mo=False)
+        except:
+            pass
 
         for attr in 'trs':
             pm.connectAttr(hidden_guide.base_ctrl + '.' + attr, dup_guide.base_ctrl + '.' + attr)
             if attr == 't':
                 pm.connectAttr(hidden_guide.radius_ctrl + '.' + attr, dup_guide.radius_ctrl + '.' + attr)
                 pm.connectAttr(self.radius_ctrl + '.' + attr, hidden_guide.radius_ctrl + '.' + attr)
+
+        """TRS TO PARENT FIRST TO GET RIGHT POSITION LAMAO"""
+        for hid_ctrl, dup_ctrl in zip(hidden_guide.controllers, dup_guide.controllers):
+            for attr in 'trs':
+                pm.connectAttr(hid_ctrl.getParent() + '.' + attr, dup_ctrl.getParent() + '.' + attr)
+
+        # above function but for fingers
+        try:
+            for hid_ctrl, dup_ctrl in zip(hidden_guide.fingers_controllers, dup_guide.fingers_controllers):
+                for attr in 'trs':
+                    pm.connectAttr(hid_ctrl.getParent() + '.' + attr, dup_ctrl.getParent() + '.' + attr)
+        except:
+            pass
+        """TRS TO PARENT FIRST TO GET RIGHT POSITION LAMAO END"""
 
         for hid_ctrl, dup_ctrl in zip(hidden_guide.controllers, dup_guide.controllers):
             for attr in 'trs':
@@ -543,7 +570,7 @@ class Guides(se.Serialize):
                 for attr in 'trs':
                     pm.connectAttr(hid_ctrl + '.' + attr, dup_ctrl + '.' + attr)
         except:
-            raise
+            pass
 
         pm.parent(self.dup_guide_mirror_grp, dup_parent)
         dup_guide.parent = dup_parent
@@ -630,7 +657,7 @@ class Guides(se.Serialize):
         # create ball curve:
         ball_ctrl = shapes.sphere(name=ctrl_name + 'ball', scale=0.7 * r)
         # parent shapes to transform:
-        orient_offset = pm.createNode('transform', n=self.name + '_orient_offset')
+        orient_offset = pm.createNode('transform', n=ctrl_name + '_orient_offset') # Changed from self.name to ctrl_name
         orient_offset.attr('ry').set(-90)
         loc_ctrl = pm.group(name=ctrl_name + '_guide', empty=True)
         pm.parent(loc_ctrl, orient_offset)
@@ -848,8 +875,8 @@ class DrawFinger(Guides):
         self.create()
         pm.select(None)
 
-        self.center_loc_ctrl = pm.rename(self.center_loc_ctrl, self.center_loc_ctrl.replace('_guide', 'A_guide'))
-        self.center_joint = pm.rename(self.center_joint, self.center_joint.replace('_jnt', 'A_jnt'))
+        # self.center_loc_ctrl = pm.rename(self.center_loc_ctrl, self.center_loc_ctrl.replace('_guide', 'A_guide'))
+        # self.center_joint = pm.rename(self.center_joint, self.center_joint.replace('_jnt', 'A_jnt'))
         self.loc_offset.attr('ry').set(-180)
 
         trans_mult = 0
@@ -898,8 +925,10 @@ class DrawFinger(Guides):
                 self.base_ctrl.attr('module_joints').set(value + '.' + j)
             else:
                 self.base_ctrl.attr('module_joints').set(j)
-        self.base_one_scale()
         self.add_fingers()
+        self.base_one_scale()
+
+        self.set_mirror(self.mirror_enabled)
 
         pm.select(self.base_ctrl)
         # self.controllers.append(splay_up_pos.get_ctrl())
@@ -913,7 +942,7 @@ class DrawFinger(Guides):
         prefix = self.module_name + '___' + self.prefix.replace('meta', 'finger')
         first_finger_joints = []
         module_joints = ''
-        self.fingers_controllers
+        self.fingers_controllers = []
         for i, ctrl in enumerate(self.controllers):
             lines = []
             trans_mult = 0.5
@@ -921,8 +950,7 @@ class DrawFinger(Guides):
             self.finger_controls = []
             module_joints += self.driven_joints[i]
             for integer in range(self.amount - 1):
-                finger_loc, finger_offset, finger_joint = self.cv_joint_loc(prefix + tools.int_to_letter(i)
-                                                                            + tools.int_to_letter(integer))
+                finger_loc, finger_offset, finger_joint = self.cv_joint_loc(prefix + tools.int_to_letter(integer))
                 if integer == 0:
                     print 'FIRST INTEGER'
                     pm.delete(pm.parentConstraint(ctrl, finger_offset))
@@ -935,6 +963,7 @@ class DrawFinger(Guides):
                     self.finger_controls.append(finger_loc)
                     self.fingers_controllers.append(finger_loc)
                     pm.parent(finger_offset, self.base_ctrl)
+                    print self.controllers[i] + '_crv'
                     grp, line = tools.create_line(self.controllers[i], finger_loc,
                                                   self.controllers[i] + '_crv')
                     lines.append(grp)
@@ -1267,8 +1296,9 @@ class DrawMeta(Guides):
                 self.base_ctrl.attr('module_joints').set(value + '.' + j)
             else:
                 self.base_ctrl.attr('module_joints').set(j)
-        self.base_one_scale()
         self.add_fingers()
+        self.base_one_scale()
+        self.set_mirror(self.mirror_enabled)
 
         pm.select(self.base_ctrl)
         self.controllers.append(splay_up_pos.get_ctrl())
@@ -1279,7 +1309,7 @@ class DrawMeta(Guides):
         pm.addAttr(self.base_ctrl, longName='finger_joints', dataType='string')
         pm.addAttr(self.base_ctrl, longName='fingers_controllers', dataType='string')
         # loop through every meta controller and create a 4 chain finger (incl end joint)
-        prefix = self.module_name + '___' + self.prefix.replace('meta', 'finger')
+        prefix = self.module_name + '___' + self.prefix.replace('meta', 'metaFinger')
         first_finger_joints = []
         module_joints = ''
         self.fingers_controllers = []
@@ -1505,7 +1535,7 @@ def get_guides_in_scene():
             guide.fingers_controllers = fingers_controllers.split('#')
         except:
             pass
-        guide.mirror_enable = mirror_enable
+        guide.mirror_enabled = mirror_enable
         guide.driven_joints = joints
         guide.base_ctrl = base_ctrl
         guide.dup_guide_mirror_grp = dup_guide_mirror_grp
@@ -1530,7 +1560,7 @@ def get_guides_in_scene():
         print guide.space_switches
         print guide.radius_ctrl
         print guide.controllers
-        print guide.mirror_enable
+        print guide.mirror_enabled
         print guide.driven_joints
         print guide.base_ctrl
         print guide.mirror

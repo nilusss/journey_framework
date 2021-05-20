@@ -42,7 +42,7 @@ class Meta(lo.Module):
         super(Meta, self).create_structure()
 
         splay_mid_ctrl = ctrl.Control(prefix=self.prefix + 'SplayMidA',
-                                      scale=self.scale * 1.2,
+                                      scale=self.scale * 0.2,
                                       trans_to=self.splay_up_pos,
                                       rot_to=self.splay_up_pos,
                                       parent=self.controls_grp,
@@ -51,7 +51,7 @@ class Meta(lo.Module):
         splay_mid_ctrl.create()
 
         splay_ctrl = ctrl.Control(prefix=self.prefix + 'SplayA',
-                                  scale=self.scale * 1.2,
+                                  scale=self.scale * 0.2,
                                   trans_to=self.splay_up_pos,
                                   rot_to=self.splay_up_pos,
                                   parent=self.controls_grp,
@@ -59,10 +59,10 @@ class Meta(lo.Module):
 
         splay_ctrl.create()
 
-        try:
-            pm.parent(self.splay_up_pos, self.parts_grp)
-        except:
-            pass
+        # try:
+        #     pm.parent(self.splay_up_pos, self.parts_grp)
+        # except:
+        #     pass
 
         # splay mid and splay end controllers
         pm.delete(pm.parentConstraint(self.driven[0], self.driven[-1], splay_mid_ctrl.get_offset(), st=['x', 'y']))
@@ -108,4 +108,3 @@ class Meta(lo.Module):
                 meta_ss = space.SpaceSwitcherLogic(self.parent, self.controls_grp, split=False, base_rig=self.base_rig)
                 meta_ss.setup_switcher()
                 meta_ss.set_space(self.parent)
-

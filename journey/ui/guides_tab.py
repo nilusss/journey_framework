@@ -16,8 +16,6 @@ reload(builder_ui)
 reload(guides)
 
 
-
-
 class GuidesTabUI(QtWidgets.QWidget):
     """TODO: ADD ABILITY TO DELETE THE LOADED PRESET. THIS WILL DELETE THE PRESET FROM DISC, BUT SHOULD KEEP CURRENT VALUES
      TODO: ADD A LINE SHOWING WHAT FILE HAS BEEN LOADED. AT THE TOP OF THE WINDOW"""
@@ -127,46 +125,55 @@ class GuidesTabUI(QtWidgets.QWidget):
     ###############
     # SLOTS START #
     ###############
-    def simple_print(self):
-        print "yuuh"
 
-    def on_rig_guides(self):
-        confirm = pm.confirmDialog(title='Rig Guides', message='Rigging the guides will delete all guides in the scene.\n'
-                                                               'Do you want to continue? ',
-                                   button=['Yes', 'No'], defaultButton='Yes',
-                                   cancelButton='No', dismissString='No')
-        if confirm == 'Yes':
-            pm.undoInfo(openChunk=True)
-            import journey.lib.builder as builder
-            reload(builder)
+    def on_rig_guides(self, skip_dialog=False):
+        if pm.ls('Master___*'):
+            if skip_dialog:
+                confirm = 'Yes'
+            else:
+                confirm = pm.confirmDialog(title='Rig Guides', message='Rigging the guides will delete all guides '
+                                                                       'in the scene.\n'
+                                                                       'Do you want to continue? ',
+                                           button=['Yes', 'No'], defaultButton='Yes',
+                                           cancelButton='No', dismissString='No')
+            if confirm == 'Yes':
+                pm.undoInfo(openChunk=True)
+                import journey.lib.builder as builder
+                reload(builder)
+                model_path = self.parent_inst.config_tab.filepath_le.text()
+                skin_weights_dir = self.parent_inst.config_tab.filepath_skin_le.text()
+                char_name = self.parent_inst.character_name
+                if not model_path:
+                    model_grp = pm.ls('*_TEMP_grp')
+                l = builder.Builder(char_name=char_name, model_path=model_path, weights_path=skin_weights_dir).build()
+                items = []
+                for x in range(self.list_wdg.count()):
+                    items.append(self.list_wdg.item(x))
+                for item in items:
+                    item_obj = item
+                    object_row = self.list_wdg.row(item)
+                    if item_obj:
+                        item_obj = item_obj.data(QtCore.Qt.UserRole)
+                        try:
+                            item_obj.delete_guide()
+                        except:
+                            pass
+                sel = pm.ls("*HIDOFFSET_GRP")
+                try:
+                    pm.delete(sel)
+                except:
+                    pass
+                try:
+                    pm.delete("MIRROR_GRP")
+                except:
+                    pass
 
-            l = builder.Builder().build()
-            items = []
-            for x in range(self.list_wdg.count()):
-                items.append(self.list_wdg.item(x))
-            for item in items:
-                item_obj = item
-                object_row = self.list_wdg.row(item)
-                if item_obj:
-                    item_obj = item_obj.data(QtCore.Qt.UserRole)
-                    try:
-                        item_obj.delete_guide()
-                    except:
-                        pass
-            sel = pm.ls("*HIDOFFSET_GRP")
-            try:
-                pm.delete(sel)
-            except:
-                pass
-            try:
-                pm.delete("MIRROR_GRP")
-            except:
-                pass
-
-            self.check_if_guides_exists()
-            self.settings_frame.hide()
-            pm.undoInfo(closeChunk=True)
-            del l
+                self.check_if_guides_exists()
+                self.settings_frame.hide()
+                pm.undoInfo(closeChunk=True)
+                del l
+        else:
+            pm.warning("No guides in scene!")
 
     def on_change_mirror(self):
         state = self.dropdown_mirror_menu.currentIndex()
@@ -176,10 +183,13 @@ class GuidesTabUI(QtWidgets.QWidget):
                 self.selected_guide_inst.set_mirror(True)
                 mc.undoInfo(closeChunk=True, chunkName=self.selected_guide_inst.name + "_mirrorOn")
         else:
-            if self.selected_guide_inst:
-                mc.undoInfo(openChunk=True, chunkName=self.selected_guide_inst.name + "_mirrorOff")
-                self.selected_guide_inst.set_mirror(False)
-                mc.undoInfo(closeChunk=True, chunkName=self.selected_guide_inst.name + "_mirrorOff")
+            try:
+                if self.selected_guide_inst:
+                    mc.undoInfo(openChunk=True, chunkName=self.selected_guide_inst.name + "_mirrorOff")
+                    self.selected_guide_inst.set_mirror(False)
+                    mc.undoInfo(closeChunk=True, chunkName=self.selected_guide_inst.name + "_mirrorOff")
+            except Exception as e:
+                pm.warning('Cant mirror!' + str(e))
 
     def on_change_ant(self):
         state = self.dropdown_ant_menu.currentIndex()
@@ -193,7 +203,6 @@ class GuidesTabUI(QtWidgets.QWidget):
                 mc.undoInfo(openChunk=True, chunkName=self.selected_guide_inst.name + "_antOff")
                 self.selected_guide_inst.base_ctrl.attr('display_annotation').set(0)
                 mc.undoInfo(closeChunk=True, chunkName=self.selected_guide_inst.name + "_antOff")
-
 
     def on_change_selection_in_viewport(self):
         print "from viewport"
@@ -257,6 +266,7 @@ class GuidesTabUI(QtWidgets.QWidget):
                 print "OBJECT DOESNT EXIST"
                 self.list_wdg.takeItem(object_row)
             #self.list_wdg.takeItem(index)
+        #self.get_guides()
 
         print "## DONE ##"
 
@@ -315,7 +325,7 @@ class GuidesTabUI(QtWidgets.QWidget):
                                 print obj_to_dict
                                 guide_dict_list.append(obj_to_dict)
                         except:
-                            pass
+                            raise
 
                     #json_write = json.dumps(guide_dict_list, )
                     json.dump(guide_dict_list, json_file)
@@ -325,7 +335,10 @@ class GuidesTabUI(QtWidgets.QWidget):
             pm.warning('No guides in scene to save!')
 
     def change_settings_panel(self):
-        self.settings_frame.show()
+        if 'root' not in self.list_wdg.currentItem().text():
+            self.settings_frame.show()
+        else:
+            self.settings_frame.hide()
         try:
             self.settings_label.setText('Settings for: ' + self.list_wdg.currentItem().text())
             self.selected_guide_inst = self.list_wdg.currentItem().data(QtCore.Qt.UserRole)

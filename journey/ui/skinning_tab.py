@@ -6,7 +6,15 @@ import maya.OpenMayaUI as mui
 import journey.ui.base_ws_control as bwsc
 import journey.lib.serialization as se
 import pymel.core as pm
-import journey.lib.utils.deform as deform
+try:
+    import journey.lib.utils.deform as deform
+except:
+    confirm = pm.confirmDialog(title='ngSkinTools not on PC', message='ngSkinTools was not found!\n'
+                                                                      'Skin saving and skin loading'
+                                                                      'will therefore not work.\n'
+                                                                      'Using those buttons will result in an error',
+                               button=['OK'],
+                               defaultButton='OK')
 import journey.lib.utils.tools as tools
 import maya.cmds as mc
 import maya.mel as mel
@@ -42,7 +50,6 @@ class SkinningTabUI(QtWidgets.QWidget):
         self.hide_joints_btn = QtWidgets.QPushButton('Hide Joints')
         self.save_btn = QtWidgets.QPushButton('Save Skinning')
 
-
     def create_layout(self):
         """Layout all the controls in corresponding layout"""
         btn_layout = QtWidgets.QVBoxLayout()
@@ -75,9 +82,6 @@ class SkinningTabUI(QtWidgets.QWidget):
     ###############
     # SLOTS START #
     ###############
-    def simple_print(self):
-        print "yuuh"
-
     def on_prep(self):
         get_rig_grp = pm.ls("*_rig_grp", assemblies=True)
         if get_rig_grp:
@@ -87,6 +91,8 @@ class SkinningTabUI(QtWidgets.QWidget):
                     child.attr('v').set(0)
                 else:
                     child.attr('v').set(1)
+            pm.PyNode('model_grp').attr('overrideEnabled').set(0)
+            pm.PyNode('model_grp').attr('overrideDisplayType').set(2)
 
         else:
             pm.warning("No rig in scene!")
@@ -100,24 +106,34 @@ class SkinningTabUI(QtWidgets.QWidget):
                     child.attr('v').set(1)
                 else:
                     child.attr('v').set(1)
-
+            pm.PyNode('model_grp').attr('overrideEnabled').set(1)
+            pm.PyNode('model_grp').attr('overrideDisplayType').set(2)
         else:
             pm.warning("No rig in scene!")
 
     def on_hide_joints(self):
-        pm.ls("joints_grp")[0].attr('v').set(0)
+        if pm.ls("joints_grp"):
+            pm.ls("joints_grp")[0].attr('v').set(0)
+        else:
+            pm.warning("No rig in scene!")
 
     def on_save(self):
-        print "saving"
-        geo_list = tools.get_geo('model_grp')
+        if pm.ls('c_root_result_jnt'):
+            pm.parent('c_root_result_jnt', w=True)
+        try:
+            geo_list = tools.get_geo('model_grp')
+        except:
+            geo_list = ''
         if geo_list:
             filepath = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Skin Weights Dir", "",
                                                                   QtWidgets.QFileDialog.ShowDirsOnly)
             if filepath:
                 print filepath
                 deform.save_weights(filepath, geo_list)
+            if pm.ls('c_root_result_jnt'):
+                pm.parent('c_root_result_jnt', 'joints_grp')
         else:
-            pm.warning("No model found in model_grp!")
+            pm.warning("No model or rig found!")
 
     #############
     # SLOTS END #

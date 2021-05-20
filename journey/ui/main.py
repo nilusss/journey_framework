@@ -24,11 +24,9 @@ reload(setup_tab)
 reload(guides_tab)
 reload(skinning_tab)
 
-
-def value_is_valid(val):
-    if isinstance(val, QtGui.QPixmap):
-        return not val.isNull()
-    return True
+# load plugins
+pm.loadPlugin('quatNodes', qt=True)
+pm.loadPlugin('matrixNodes', qt=True)
 
 
 def get_maya_window():
@@ -267,9 +265,6 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
     ###############
     # SLOTS START #
     ###############
-    def simple_print(self):
-        print "yuuh"
-
     def clear_ui(self):
         self.set_loaded_file(None)
         self.config_tab.char_name_le.setText('')
@@ -277,6 +272,7 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         self.config_tab.filepath_builder_le.setText('')
         self.config_tab.filepath_skin_le.setText('')
         self.guides_tab.list_wdg.clear()
+        self.config_tab.set_optionvars()
         pm.select(None)
 
     def menu_new(self):
@@ -292,6 +288,7 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
             "builder_file": self.config_tab.filepath_builder_le.text(),
             "skin_weights_dir": self.config_tab.filepath_skin_le.text(),
         }
+        print json_value
         return json_value
 
     def save_dialog(self, json_value):
@@ -360,7 +357,7 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
                     except:
                         pass
                     try:
-                        self.config_tab.filepath_skin_le.setText(jdata['skin_dir'])
+                        self.config_tab.filepath_skin_le.setText(jdata['skin_weights_dir'])
                     except:
                         pass
                     self.set_loaded_file(filepath)

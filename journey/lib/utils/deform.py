@@ -58,57 +58,60 @@ def load_weights(weight_dir, geo_list=[], joint_list=[]):
     # weights folder
 
     weight_files = os.listdir(weight_dir)
+    if weight_files:
 
-    # load skin weights
-    # alternatively, if you don't want such a long line of code:
+        # load skin weights
+        # alternatively, if you don't want such a long line of code:
 
-    for geo in geo_list:
-        kwargs = {
-            'toSelectedBones': True,
-            'bindMethod': 0,
-            'skinMethod': 2,
-            'name': geo.replace('geo', 'scls'),
-            'normalizeWeights': 1,
-            'maximumInfluences': 4
-        }
-        try:
-            scls = pm.skinCluster(joint_list, geo, **kwargs)[0]
-        except RuntimeError:
-            print 'bad bind' + str(RuntimeError)
-
-    for wt_file in weight_files:
-
-        ext_res = os.path.splitext(wt_file)
-
-        # check extension format
-        if not ext_res > 1:
-            continue
-
-        # check skin weight file
-        if not ext_res[1] == '.json':
-            continue
-
-        # check geometry list
-        if geo_list and not ext_res[0] in geo_list:
-            continue
-
-        # check if objects exist
-        if not pm.objExists(ext_res[0]):
-            continue
-
-        fullpath_weight_file = os.path.join(weight_dir, wt_file)
-
-        if ".json" in ext_res[1]:
-            with open(fullpath_weight_file, 'r') as f:
-                data = f.read()
-
-            #with open(fullpath_weight_file) as json_file:
-                #data = json.load(json_file)
-            importer = JsonImporter()
-            layerData = importer.process(data)
+        for geo in geo_list:
+            kwargs = {
+                'toSelectedBones': True,
+                'bindMethod': 0,
+                'skinMethod': 2,
+                'name': geo.replace('geo', 'scls'),
+                'normalizeWeights': 1,
+                'maximumInfluences': 4
+            }
             try:
-                layerData.saveTo(wt_file.replace('.json', 'Shape'))
-            except Exception as e:
-                print 'warning:' + str(e)
+                scls = pm.skinCluster(joint_list, geo, **kwargs)[0]
+            except RuntimeError:
+                print 'bad bind' + str(RuntimeError)
 
-        #bSkinSaver2.bLoadSkinValues(loadOnSelection=False, inputFile=fullpath_weight_file)
+        for wt_file in weight_files:
+
+            ext_res = os.path.splitext(wt_file)
+
+            # check extension format
+            if not ext_res > 1:
+                continue
+
+            # check skin weight file
+            if not ext_res[1] == '.json':
+                continue
+
+            # check geometry list
+            if geo_list and not ext_res[0] in geo_list:
+                continue
+
+            # check if objects exist
+            if not pm.objExists(ext_res[0]):
+                continue
+
+            fullpath_weight_file = os.path.join(weight_dir, wt_file)
+
+            if ".json" in ext_res[1]:
+                with open(fullpath_weight_file, 'r') as f:
+                    data = f.read()
+
+                #with open(fullpath_weight_file) as json_file:
+                    #data = json.load(json_file)
+                importer = JsonImporter()
+                layerData = importer.process(data)
+                try:
+                    layerData.saveTo(wt_file.replace('.json', 'Shape'))
+                except Exception as e:
+                    print 'warning:' + str(e)
+
+            #bSkinSaver2.bLoadSkinValues(loadOnSelection=False, inputFile=fullpath_weight_file)
+    else:
+        pm.warning('No skin weight files in directory!')

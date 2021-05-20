@@ -169,6 +169,8 @@ class BuilderUI(QtWidgets.QDialog):
         self.draw_btn.clicked.connect(self.on_draw_pressed)
 
     def draw_guide(self, guide_type, prefix):
+        guide = ''
+        guide_am = ''
         try:
             mc.undoInfo(openChunk=True, chunkName="drawguide")
             if not pm.ls('Master___*'):
@@ -193,18 +195,19 @@ class BuilderUI(QtWidgets.QDialog):
                     exec('guide_am = guides.{0}(prefix=\'{1}\', amount={2}).draw()'.format(guide_type,
                                                                                                prefix,
                                                                                                amount))
-                    return guide_am
                 except Exception as e:
-                    raise e
+                    raise
             else:
                 print "bingonb"
-            exec('guide = guides.{}(prefix=\'{}\').draw()'.format(guide_type, prefix))
-            return guide
+                exec('guide = guides.{}(prefix=\'{}\').draw()'.format(guide_type, prefix))
         except Exception as e:
-            raise e
+            raise
         finally:
-            pass
             mc.undoInfo(closeChunk=True, chunkName="drawguide")
+            if guide:
+                return guide
+            if guide_am:
+                return guide_am
 
     ###############
     # SLOTS START #

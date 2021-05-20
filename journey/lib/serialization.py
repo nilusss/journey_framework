@@ -43,12 +43,11 @@ def deserialize_guide(serialized_object):
 class Encoder(json.JSONEncoder):
     def default(self, obj):
         import journey.lib.control as ctrl
-        import journey.lib.modules as mdls
         if "pymel.core.nodetypes." in str(type(obj)):
             return obj.name()
         if isinstance(obj, ctrl.Control):
             return obj.__dict__
-        if isinstance(obj, mdls.arm.Arm):
+        if "Draw" in str(obj.__class__.__name__):
             return ''
             # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
