@@ -8,6 +8,7 @@ import journey.lib.serialization as se
 import pymel.core as pm
 try:
     import journey.lib.utils.deform as deform
+    reload(deform)
 except:
     confirm = pm.confirmDialog(title='ngSkinTools not on PC', message='ngSkinTools was not found!\n'
                                                                       'Skin saving and skin loading'
@@ -25,7 +26,7 @@ from maya.OpenMayaUI import MQtUtil
 reload(guides)
 reload(bwsc)
 reload(se)
-reload(deform)
+
 reload(tools)
 
 

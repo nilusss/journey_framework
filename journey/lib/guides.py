@@ -138,8 +138,10 @@ class Guides(se.Serialize):
         except:
             pass
         pm.delete(self.base_ctrl)
-    def get_controllers_trs(self):
 
+    def get_controllers_trs(self):
+        if not self.fingers_controllers:
+            self.fingers_controllers = []
         for ctrl in self.controllers + [self.base_ctrl] + [self.radius_ctrl] + self.fingers_controllers:
             print ctrl
             self.ctrl_positions[pm.PyNode(ctrl).name()] = {}
@@ -150,7 +152,7 @@ class Guides(se.Serialize):
                     try:
                         print "a"
                         attr_val = pm.PyNode(ctrl).getAttr(ch + axis)
-                        self.ctrl_positions[ctrl.name()][ch + axis] = attr_val
+                        self.ctrl_positions[pm.PyNode(ctrl).name()][ch + axis] = attr_val
                     except:
                         pass
 
@@ -927,6 +929,7 @@ class DrawFinger(Guides):
                 self.base_ctrl.attr('module_joints').set(j)
         self.add_fingers()
         self.base_one_scale()
+        self.set_controllers_trs()
 
         self.set_mirror(self.mirror_enabled)
 
@@ -1298,6 +1301,7 @@ class DrawMeta(Guides):
                 self.base_ctrl.attr('module_joints').set(j)
         self.add_fingers()
         self.base_one_scale()
+        self.set_controllers_trs()
         self.set_mirror(self.mirror_enabled)
 
         pm.select(self.base_ctrl)

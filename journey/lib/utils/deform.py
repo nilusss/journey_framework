@@ -6,8 +6,11 @@ Module for saving and loading skin weights using ngSkinTools
 import os
 
 import pymel.core as pm
-from ngSkinTools.mllInterface import MllInterface
-from ngSkinTools.importExport import LayerData, JsonExporter, JsonImporter
+try:
+    from ngSkinTools.mllInterface import MllInterface
+    from ngSkinTools.importExport import LayerData, JsonExporter, JsonImporter
+except:
+    pass
 import json
 
 def save_weights(weight_dir, geo_list=[]):
