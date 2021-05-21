@@ -26,7 +26,6 @@ class Base:
                  scale=1.0,
                  global_ctrl_scale=20):
         """
-
         Args:
             char_name (str): name for the base rig grp
             scene_obj_type (str): object type for the base structure. Usually 'rig'

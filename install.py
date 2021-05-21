@@ -3,7 +3,6 @@ install module to automatically install the journey toolset to maya and create s
 """
 
 import os
-
 import pymel.core as pm
 import maya.mel as mel
 

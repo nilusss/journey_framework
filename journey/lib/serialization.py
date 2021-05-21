@@ -66,5 +66,3 @@ class Serialize(object):
         return json.dumps(self.__dict__, cls=Encoder)
         # return dict(class_name='__{}__'.format(self.__class__.__name__), struct=json.dumps(self.__dict__, cls=Encoder))
         # json.dumps(self, default=lambda o: o.get_dict())
-
-

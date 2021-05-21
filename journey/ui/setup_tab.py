@@ -209,7 +209,10 @@ class SetupTabUI(QtWidgets.QWidget):
 
     def set_character_name(self):
         self.parent_inst.character_name = self.char_name_le.text()
-        self.parent_inst.set_ui_title()
+        try:
+            self.parent_inst.set_ui_title()
+        except:
+            pass
 
     def on_import_model(self):
         grp_exists = pm.ls("*_TEMP_grp")
