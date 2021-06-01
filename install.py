@@ -14,7 +14,6 @@ def onMayaDroppedPythonFile(*args):
 
     for s_file in os.listdir(file_path):
         if 'journey.mod' in s_file:
-            print s_file
             copy(file_path + '\\' + s_file, file_path.replace('\\journey_framework', ''))
 
     mel.eval('global string $gShelfTopLevel;')
@@ -26,10 +25,11 @@ def onMayaDroppedPythonFile(*args):
     pm.shelfButton(command="import pymel.core as pm\n"
                            "try:\n"
                            "    import journey.ui.main as maui\n"
+                           "    print(\"LOADING UI...\")\n"
+                           "    reload(maui)\n"
+                           "    ui = maui.show()\n"
                            "except:\n"
-                           "    pm.warning('Can not load module. Please restart Maya')\n"
-                           "reload(maui)\n"
-                           "ui = maui.show()",
+                           "    pm.warning('Can not load module. Please restart Maya')\n",
                    annotation="Journey Framework",
                    label="JF",
                    image=file_path + "/journey/icons/icon.png",
