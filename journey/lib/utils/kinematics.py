@@ -380,7 +380,8 @@ class Spline:
         # create proxy attributes and enable on/off stretch attr
         proxy_ctrl = pm.spaceLocator(self.prefix + 'proxy_ctrl')
         proxy_ctrl.addAttr('Stretch', keyable=True, at='bool', defaultValue=1)
-
+        if self.rig_module:
+            pm.parent(proxy_ctrl, self.rig_module.parts_grp)
         self.start_bind_ctrl.get_ctrl().addAttr('Stretch', usedAsProxy=True, keyable=True, at='bool')
         self.end_bind_ctrl.get_ctrl().addAttr('Stretch', usedAsProxy=True, keyable=True, at='bool')
 

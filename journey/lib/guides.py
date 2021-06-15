@@ -440,6 +440,10 @@ class Guides(se.Serialize):
         exec ('dup_guide = Draw{}(prefix=\'{}\')'.format(self.module_name, prefix))
         # if 'Foot' in self.module_name:
         #     dup_guide.parent = dup_parent
+        try:
+            dup_guide.amount = self.amount
+        except:
+            pass
         dup_guide.draw()
         pm.parent(dup_guide.base_ctrl, w=True)
         self.mirror_guide = dup_guide
@@ -448,7 +452,12 @@ class Guides(se.Serialize):
         self.base_ctrl.attr('mirror_guide_base_ctrl').set(self.mirror_guide.base_ctrl)
         self.mirror_guide_base_ctrl = self.mirror_guide.base_ctrl
         pm.select(None)
-        exec ('hidden_guide = Draw{}(prefix=\'{}\').draw()'.format(self.module_name, prefix + 'HIDDEN', 'draw'))
+        exec ('hidden_guide = Draw{}(prefix=\'{}\')'.format(self.module_name, prefix + 'HIDDEN'))
+        try:
+            hidden_guide.amount = self.amount
+        except:
+            pass
+        hidden_guide.draw()
         pm.rename(hidden_guide.base_ctrl, 'HIDDEN_' + hidden_guide.base_ctrl)
 
         # set annotation with MIRROR prefix
