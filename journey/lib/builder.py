@@ -98,9 +98,11 @@ class Builder():
                 model_node = set(after).difference(before).pop()
                 pm.parent(model_node, self.base_rig.model_grp)
             else:
+                pm.delete(self.base_rig.model_grp)
                 model_node = pm.importFile(self.model_path, i=True, groupReference=True,
-                                           groupName=self.base_rig.model_grp,
+                                           groupName='model_grp',
                                            returnNewNodes=True)
+                self.base_rig.model_grp = 'model_grp'
                 pm.parent(self.base_rig.model_grp, self.base_rig.top_grp)
             pm.select(None)
         elif model_in_scene:
