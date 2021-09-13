@@ -1,6 +1,9 @@
 """
 module containing different class kinematics for fk, ik, spline.
 """
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import pymel.core as pm
 import journey.lib.control as ctrl
 import journey.lib.utils.tools as tools

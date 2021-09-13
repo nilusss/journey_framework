@@ -1,4 +1,7 @@
 # from journey.vendor.Qt import QtWidgets, QtGui, QtCore
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 from PySide2 import QtWidgets, QtGui, QtCore
 from shiboken2 import wrapInstance
 import journey.lib.guides as guides
@@ -14,13 +17,15 @@ TODO: make dialog a dockable window
 """
 
 
-
 def get_maya_window():
     """
     Return maya main window as a python object
     """
     ptr = mui.MQtUtil.mainWindow()  # ptr = pointer
-    return wrapInstance(long(ptr), QtWidgets.QWidget)
+    if sys.version_info.major >= 3:
+        return wrapInstance(int(ptr), QtWidgets.QWidget)
+    else:
+        return wrapInstance(long(ptr), QtWidgets.QWidget)
 
 
 def all_members(a_class):
@@ -98,7 +103,6 @@ class BuilderUI(QtWidgets.QDialog):
         self.amount_label = QtWidgets.QLabel("Joint Amount: ")
         self.amount_le = QtWidgets.QLineEdit("4")
 
-
         self.class_for_amount = []
         for cls in self.draw_classes:
             # create "create" button for each module
@@ -107,13 +111,12 @@ class BuilderUI(QtWidgets.QDialog):
 
             # get variables for setting panel ## amount
             exec('gds = guides.{}'.format(cls))
-            get_members = all_members(gds)
+            get_members = all_members(locals()["gds"])
             for membr in get_members.keys():
                 if 'amount' in membr:
                     self.class_for_amount.append(cls.replace('Draw', ''))
 
-
-        print self.class_for_amount
+        print(self.class_for_amount)
 
     def create_layout(self):
         """Layout all the controls in corresponding layout"""
@@ -177,29 +180,34 @@ class BuilderUI(QtWidgets.QDialog):
                 if guide_type not in 'DrawMaster':
                     master = guides.DrawMaster(prefix='c_root').draw()
                     try:
-                        print "IN"
+                        print("IN")
                         guide_list_item = QtWidgets.QListWidgetItem()
                         guide_list_item.setData(QtCore.Qt.UserRole, master)
                         guide_list_item.setText('c_root')
                         self.parent_inst.list_wdg.addItem(guide_list_item)
                     except Exception as e:
-                        print str(e)
+                        print( str(e))
                     master.radius_ctrl.attr('ty').set(3)
                     pm.select(master.controllers[0])
             a = prefix
+            print("THIS is GUIDE TYPE" + guide_type)
 
             if self.has_amount:
-                print 'ass'
+                print('ass')
                 try:
                     amount = int(self.amount_le.text())
                     exec('guide_am = guides.{0}(prefix=\'{1}\', amount={2}).draw()'.format(guide_type,
-                                                                                               prefix,
-                                                                                               amount))
+                                                                                           prefix,
+                                                                                           amount))
+                    guide_am = globals()['guide_am']
+                    print("THIS IS GUIDE" + guide_am)
                 except Exception as e:
                     raise
             else:
-                print "bingonb"
+                print("bingonb")
                 exec('guide = guides.{}(prefix=\'{}\').draw()'.format(guide_type, prefix))
+                guide = globals()['guide']
+                print("THIS IS GUIDE" + guide + 'EUISDFHJBNUIOHNSDF')
         except Exception as e:
             raise
         finally:
@@ -236,7 +244,6 @@ class BuilderUI(QtWidgets.QDialog):
             self.amount_frame.hide()
             self.has_amount = False
 
-
     def on_list_change_prefix(self):
         self.change_selection()
 
@@ -249,14 +256,15 @@ class BuilderUI(QtWidgets.QDialog):
         guide = self.list_wdg.currentItem().text()
         prefix = self.line_edit.text()
         returned_guide = self.draw_guide(guide, side_value + prefix)
+        print(returned_guide)
         try:
-            print "IN"
+            print("IN")
             guide_list_item = QtWidgets.QListWidgetItem()
             guide_list_item.setData(QtCore.Qt.UserRole, returned_guide)
             guide_list_item.setText(side_value + prefix)
             self.parent_inst.list_wdg.addItem(guide_list_item)
         except Exception as e:
-            print str(e)
+            print(str(e))
 
     #############
     # SLOTS END #

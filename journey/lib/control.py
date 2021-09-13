@@ -3,8 +3,10 @@ module for making curve controls
 
 TODO: fix set_shape to orient correctly - fix cycles
 """
-
+import sys
 import pymel.core as pm
+if sys.version_info.major >= 3:
+    from importlib import reload
 import journey.lib.utils.tools as tools
 import journey.lib.utils.shapes as shapes
 import journey.lib.utils.color as color
@@ -54,7 +56,7 @@ class Control:
     def set_shape(self, shape):
         if self.get_ctrl():
             exec ("return_shape = shapes.{0}(self.scale, self.prefix + '1_ctrl')".format(shape))
-            pm.delete(pm.parentConstraint(self.get_ctrl(), return_shape))
+            pm.delete(pm.parentConstraint(self.get_ctrl(), locals()["return_shape"]))
             for shape in pm.PyNode(self.get_ctrl()).getShapes():
                 pm.delete(shape)
             for shape in pm.PyNode(return_shape).getShapes():
@@ -65,7 +67,8 @@ class Control:
         else:
             # exec("return_shape = shapes.{0}({1}, {2})".format(self.shape, self.scale, self.prefix + '_ctrl'))
             exec("return_shape = shapes.{0}(self.scale, self.prefix + '_ctrl')".format(shape))
-            self.ctrl_object = return_shape
+            self.ctrl_object = locals()["return_shape"]
+            print(self.ctrl_object)
 
         return self.ctrl_object
 
@@ -88,6 +91,7 @@ class Control:
 
         if ctrl_color:
             exec('clr_key = color.{0}'.format(ctrl_color))
+            clr_key = locals()['clr_key']
             [pm.setAttr(s + '.ovc', clr_key) for s in self.ctrl_object.getShapes()]
 
     def set_channels(self, channels):

@@ -3,9 +3,12 @@ module containing different guide setups.
 NOTE: CONTROLLERS MADE WITH ctrl.Control needs 'channels=['v']'
 TODO: MIRROR WITHOUT THE NEED TO HAVE A PARENT MODULE TO ATTACH TO
 """
+import sys
 import re
 import fnmatch
 import pymel.core as pm
+if sys.version_info.major >= 3:
+    from importlib import reload
 import journey.lib.control as ctrl
 import journey.lib.utils.shapes as shapes
 import journey.lib.utils.tools as tools
@@ -129,10 +132,10 @@ class Guides(se.Serialize):
         """used for deleting module and mirror module"""
         self.set_mirror(False)
         child = self.get_child_module(obj=self.base_ctrl, search_string='_base', ad=True)
-        print "THESE" + str(child)
+        print( "THESE" + str(child))
         try:
             if child:
-                print child
+                print( child)
                 pm.parent(child, 'Master___c_root_guide')
                 pm.select(None)
         except:
@@ -143,20 +146,20 @@ class Guides(se.Serialize):
         if not self.fingers_controllers:
             self.fingers_controllers = []
         for ctrl in self.controllers + [self.base_ctrl] + [self.radius_ctrl] + self.fingers_controllers:
-            print ctrl
+            print( ctrl)
             self.ctrl_positions[pm.PyNode(ctrl).name()] = {}
             for ch in ['t', 'r', 's']:
-                print ch
+                print( ch)
                 for axis in ['x', 'y', 'z']:
-                    print axis
+                    print( axis)
                     try:
-                        print "a"
+                        print( "a")
                         attr_val = pm.PyNode(ctrl).getAttr(ch + axis)
                         self.ctrl_positions[pm.PyNode(ctrl).name()][ch + axis] = attr_val
                     except:
                         pass
 
-        print self.ctrl_positions
+        print( self.ctrl_positions)
 
     def set_controllers_trs(self):
         if self.ctrl_positions:
@@ -287,7 +290,7 @@ class Guides(se.Serialize):
             pm.parent(self.base_ctrl, self.sel_parent)
             pm.select(None)
         for attr in ['tx', 'ty', 'tz']:
-            print attr
+            print( attr)
             try:
                 self.base_ctrl.attr(attr).set(0)
             except:
@@ -310,7 +313,7 @@ class Guides(se.Serialize):
         self.base_ctrl.attr('sz').set(1)
 
     def set_mirror(self, enabled=False):
-        print "SETTING MIRROR"
+        print( "SETTING MIRROR")
         if 'c_' in self.prefix:
             return pm.warning('Can\'t mirror \"Center\" objects!')
         elif enabled:
@@ -322,8 +325,8 @@ class Guides(se.Serialize):
             self.base_ctrl.attr('mirror_enable').set(0)
             try:
                 if self.mirror_guide:
-                    print self.mirror_guide.name
-                    print self.mirror_guide.prefix
+                    print( self.mirror_guide.name)
+                    print( self.mirror_guide.prefix)
             except:
                 pass
             """TODO: CHECK FOR MIRROR GRP IN THE BASE CONTROL INSTEAD OF DUP_GUIDE_MIRROR_GRP YA DUMDUM\
@@ -331,15 +334,15 @@ class Guides(se.Serialize):
             try:
                 child = self.get_child_module(obj=self.mirror_guide_base_ctrl, search_string='MIRROR_GRP', ad=True)
                 children = self.get_child_module(obj=self.mirror_guide_base_ctrl, search_string='_base', ad=True)
-                print "CHILDREN AAAAAAAAAAAH"
-                print self.mirror_guide_base_ctrl
-                print child
-                print children
+                print( "CHILDREN AAAAAAAAAAAH")
+                print( self.mirror_guide_base_ctrl)
+                print( child)
+                print( children)
             except:
                 pass
             try:
                 if child:
-                    print child
+                    print( child)
                     pm.parent(child, 'Master___c_root_guide')
             except:
                 pass
@@ -369,7 +372,7 @@ class Guides(se.Serialize):
                 del_nodes.extend(pm.ls("{}HIDDEN*".format(self.mirror_guide_name)))
                 del_nodes.extend(pm.ls("{}mirror*".format(self.mirror_guide_prefix)))
                 del_nodes.extend(pm.ls("{}HIDDEN*".format(self.mirror_guide_prefix)))
-                print "DELETING THESE NODES " + str(del_nodes)
+                print("DELETING THESE NODES " + str(del_nodes))
                 match_prefix = [self.mirror_guide_prefix + 'HIDDEN']
                 match_name = [self.mirror_guide_prefix + 'mirror',
                               self.mirror_guide_name + 'HIDDEN']
@@ -402,7 +405,7 @@ class Guides(se.Serialize):
     def mirror(self):
         """TODO: give the possibility to mirror on any axis. ATM only mirror from X to -X"""
         self.ctrl_positions = {}
-        print "POSITIONS: " + str(self.ctrl_positions)
+        print( "POSITIONS: " + str(self.ctrl_positions))
 
         mirror_grp = pm.ls("MIRROR_GRP")
         if not mirror_grp:
@@ -437,7 +440,8 @@ class Guides(se.Serialize):
             dup_axis = -1
 
         pm.select(None)
-        exec ('dup_guide = Draw{}(prefix=\'{}\')'.format(self.module_name, prefix))
+        exec('dup_guide = Draw{}(prefix=\'{}\')'.format(self.module_name, prefix))
+        dup_guide = locals()['dup_guide']
         # if 'Foot' in self.module_name:
         #     dup_guide.parent = dup_parent
         try:
@@ -452,7 +456,8 @@ class Guides(se.Serialize):
         self.base_ctrl.attr('mirror_guide_base_ctrl').set(self.mirror_guide.base_ctrl)
         self.mirror_guide_base_ctrl = self.mirror_guide.base_ctrl
         pm.select(None)
-        exec ('hidden_guide = Draw{}(prefix=\'{}\')'.format(self.module_name, prefix + 'HIDDEN'))
+        exec('hidden_guide = Draw{}(prefix=\'{}\')'.format(self.module_name, prefix + 'HIDDEN'))
+        dup_guide = locals()['dup_guide']
         try:
             hidden_guide.amount = self.amount
         except:
@@ -480,8 +485,8 @@ class Guides(se.Serialize):
         dup_guide.base_ctrl.attr('sx').set(dup_axis)
 
         pm.delete(pm.parentConstraint(self.base_ctrl, dup_guide.base_ctrl))
-        print self.controllers
-        print dup_guide.controllers
+        print( self.controllers)
+        print( dup_guide.controllers)
         for og_ctrl, dup_ctrl in zip(self.controllers, dup_guide.controllers):
             pm.delete(pm.parentConstraint(og_ctrl, dup_ctrl.getParent()))
         # above loop but for fingers
@@ -523,15 +528,15 @@ class Guides(se.Serialize):
 
         pm.parent(dup_guide.base_ctrl, self.dup_mirror_offset_grp)
 
-        print "##PRINTING CONTROLLERS##"
-        print self.controllers
-        print dup_guide.controllers
-        print hidden_guide.controllers
+        print( "##PRINTING CONTROLLERS##")
+        print( self.controllers)
+        print( dup_guide.controllers)
+        print( hidden_guide.controllers)
         try:
-            print self.fingers_controllers
+            print( self.fingers_controllers)
         except:
             pass
-        print "##DONE##"
+        print( "##DONE##")
 
         for og_ctrl, hid_ctrl in zip(self.controllers, hidden_guide.controllers):
             pm.delete(pm.parentConstraint(og_ctrl, hid_ctrl.getParent()))
@@ -597,7 +602,7 @@ class Guides(se.Serialize):
         if 'Foot' in self.module_name:
             dup_guide.set_parent()
             pm.parent(dup_guide.base_ctrl, self.dup_mirror_offset_grp)
-        print dup_guide.base_ctrl.getAttr('module_joints')
+        print( dup_guide.base_ctrl.getAttr('module_joints'))
         dup_guide.base_ctrl.attr('overrideEnabled').set(1)
         dup_guide.base_ctrl.attr('overrideDisplayType').set(1)
         pm.select(self.base_ctrl)
@@ -711,17 +716,17 @@ class Guides(se.Serialize):
         Returns:
             dict, curve object and curve offset group
         """
-        print self.parent
+        print( self.parent)
         start = pm.PyNode(self.parent).name()
         end = pm.PyNode(self.controllers[0]).name()
-        print start
-        print end
+        print( start)
+        print( end)
 
         pos1 = pm.xform(start, q=1, t=1, ws=1)
         pos2 = pm.xform(end, q=1, t=1, ws=1)
         crv = pm.curve(n=prefix + 'Line_crv', d=1, p=[pos1, pos2])
         cls1 = pm.cluster(crv + '.cv[0]', n=prefix + 'Line1_cls', wn=[start, start], bs=True)
-        print cls1
+        print( cls1)
         cls2 = pm.cluster(crv + '.cv[1]', n=prefix + 'Line2_cls', wn=[end, end], bs=True)
         crv.attr('template').set(1)
         offset_grp = pm.createNode("transform", name=prefix + 'CrvOffset_grp')
@@ -789,12 +794,12 @@ class DrawArm(Guides):
         self.driven_joints.append(elbow_joint)
         self.driven_joints.append(wrist_joint)
 
-        print self.driven_joints
+        print( self.driven_joints)
 
         for i, j in enumerate(self.driven_joints):
-            print j
+            print( j)
             if i > 0:
-                print self.driven_joints[i]
+                print( self.driven_joints[i])
                 b = pm.aimConstraint(self.driven_joints[i], self.driven_joints[i - 1],
                                      upVector=[0, 0, 0], worldUpType='none', mo=True)
 
@@ -904,7 +909,7 @@ class DrawFinger(Guides):
             self.driven_joints.append(meta_joint)
             self.controllers.append(meta_loc)
 
-            print meta_loc
+            print( meta_loc)
             grp, line = tools.create_line(self.controllers[i - 1], meta_loc,
                                           self.controllers[i - 1] + '_crv')
             lines.append(grp)
@@ -964,7 +969,7 @@ class DrawFinger(Guides):
             for integer in range(self.amount - 1):
                 finger_loc, finger_offset, finger_joint = self.cv_joint_loc(prefix + tools.int_to_letter(integer))
                 if integer == 0:
-                    print 'FIRST INTEGER'
+                    print( 'FIRST INTEGER')
                     pm.delete(pm.parentConstraint(ctrl, finger_offset))
                     b = pm.aimConstraint(finger_loc, self.driven_joints[i],
                                          upVector=[0, 0, 0], worldUpType='none', mo=True)
@@ -975,7 +980,7 @@ class DrawFinger(Guides):
                     self.finger_controls.append(finger_loc)
                     self.fingers_controllers.append(finger_loc)
                     pm.parent(finger_offset, self.base_ctrl)
-                    print self.controllers[i] + '_crv'
+                    print( self.controllers[i] + '_crv')
                     grp, line = tools.create_line(self.controllers[i], finger_loc,
                                                   self.controllers[i] + '_crv')
                     lines.append(grp)
@@ -983,7 +988,7 @@ class DrawFinger(Guides):
                     first_finger_joints.append(finger_joint)
                     module_joints += '#' + finger_joint
                 else:
-                    print 'NOOOOOT FIRST INTEGER'
+                    print( 'NOOOOOT FIRST INTEGER')
 
                     pm.delete(pm.parentConstraint(self.finger_controls[integer - 1], finger_offset))
                     b = pm.aimConstraint(finger_loc, finger_joints[integer - 1],
@@ -1099,9 +1104,9 @@ class DrawFoot(Guides):
                 self.base_ctrl.attr('tx').set(0)
                 self.base_ctrl.attr('ty').set(0)
                 self.base_ctrl.attr('tz').set(0)
-                print "FOOT DRIVEN JOINTS BEFORE: " + str(self.driven_joints)
+                print( "FOOT DRIVEN JOINTS BEFORE: " + str(self.driven_joints))
                 self.driven_joints.pop(0)
-                print "FOOT DRIVEN JOINTS AFTER: " + str(self.driven_joints)
+                print( "FOOT DRIVEN JOINTS AFTER: " + str(self.driven_joints))
 
         self.center_loc_ctrl = pm.rename(self.center_loc_ctrl,
                                          self.center_loc_ctrl.replace('_guide', 'Ankle_guide'))
@@ -1118,9 +1123,9 @@ class DrawFoot(Guides):
             if 'Limb' in self.get_parent_module().name():
 
                 pm.hide(self.center_loc_ctrl)
-                print "FOOT DRIVEN JOINTS BEFORE: " + str(self.driven_joints)
+                print( "FOOT DRIVEN JOINTS BEFORE: " + str(self.driven_joints))
                 self.driven_joints.pop(0)
-                print "FOOT DRIVEN JOINTS AFTER: " + str(self.driven_joints)
+                print( "FOOT DRIVEN JOINTS AFTER: " + str(self.driven_joints))
         self.get_module_joints()
         # self.base_one_scale()
 
@@ -1276,7 +1281,7 @@ class DrawMeta(Guides):
             self.driven_joints.append(meta_joint)
             self.controllers.append(meta_loc)
 
-            print meta_loc
+            print( meta_loc)
             grp, line = tools.create_line(self.controllers[i - 1], meta_loc,
                                           self.controllers[i - 1] + '_crv')
             lines.append(grp)
@@ -1336,7 +1341,7 @@ class DrawMeta(Guides):
                 finger_loc, finger_offset, finger_joint = self.cv_joint_loc(prefix + tools.int_to_letter(i)
                                                                             + tools.int_to_letter(integer))
                 if integer == 0:
-                    print 'FIRST INTEGER'
+                    print( 'FIRST INTEGER')
                     pm.delete(pm.parentConstraint(ctrl, finger_offset))
                     b = pm.aimConstraint(finger_loc, self.driven_joints[i],
                                          upVector=[0, 0, 0], worldUpType='none', mo=True)
@@ -1354,7 +1359,7 @@ class DrawMeta(Guides):
                     first_finger_joints.append(finger_joint)
                     module_joints += '#' + finger_joint
                 else:
-                    print 'NOOOOOT FIRST INTEGER'
+                    print( 'NOOOOOT FIRST INTEGER')
 
                     pm.delete(pm.parentConstraint(self.finger_controls[integer - 1], finger_offset))
                     b = pm.aimConstraint(finger_loc, finger_joints[integer - 1],
@@ -1510,7 +1515,7 @@ def get_guides_in_scene():
                 if match:
                     if 'HIDDEN' not in c.name():
                         get_parent = pm.listRelatives(c.name(), parent=True)[0]
-                        print get_parent
+                        print(get_parent)
                         if "MIRROR" not in get_parent.name():
                             modules.append(c)
     for module in modules:
@@ -1535,6 +1540,7 @@ def get_guides_in_scene():
 
 
         exec('guide = Draw{}(prefix=\'{}\')'.format(module_namespace, custom_name))
+        guide = locals()['guide']
         guide.module_name = module_namespace
         guide.prefix = custom_name
         guide.parent = module.getParent()
@@ -1560,33 +1566,33 @@ def get_guides_in_scene():
         except:
             pass
 
-        print "\n\n\nNEW"
+        print( "\n\n\nNEW")
         if 'limb' in guide.base_ctrl.name():
             try:
-                print guide.mirror_guide_base_ctrl.split('_base')[0]
+                print( guide.mirror_guide_base_ctrl.split('_base')[0])
             except:
                 pass
 
-        print guide.module_name
-        print guide.prefix
-        print guide.parent
-        print guide.space_switches
-        print guide.radius_ctrl
-        print guide.controllers
-        print guide.mirror_enabled
-        print guide.driven_joints
-        print guide.base_ctrl
-        print guide.mirror
-        print guide.dup_guide_mirror_grp
-        print guide.hidden_guide_offset_grp
+        print( guide.module_name)
+        print( guide.prefix)
+        print( guide.parent)
+        print( guide.space_switches)
+        print( guide.radius_ctrl)
+        print( guide.controllers)
+        print( guide.mirror_enabled)
+        print( guide.driven_joints)
+        print( guide.base_ctrl)
+        print( guide.mirror)
+        print( guide.dup_guide_mirror_grp)
+        print( guide.hidden_guide_offset_grp)
         try:
-            print guide.mirror_guide_base_ctrl
-            print guide.mirror_guide_name
-            print guide.mirror_guide_prefix
+            print(guide.mirror_guide_base_ctrl)
+            print(guide.mirror_guide_name)
+            print(guide.mirror_guide_prefix)
         except:
             pass
         try:
-            print guide.fingers_controllers
+            print(guide.fingers_controllers)
         except:
             pass
         object_list.append(guide)

@@ -17,7 +17,7 @@ def save_weights(weight_dir, geo_list=[]):
     """
     save geometry weights for character
     """
-    print weight_dir
+    print( weight_dir)
 
     for obj in geo_list:
         # save dir and save file
@@ -49,7 +49,7 @@ def save_weights(weight_dir, geo_list=[]):
         #mc.select(obj)
         #bSkinSaver2.bSaveSkinValues(weight_file)
 
-        print "Saved to: " + weight_file
+        print ("Saved to: " + weight_file)
         pm.select(None)
 
 
@@ -78,7 +78,7 @@ def load_weights(weight_dir, geo_list=[], joint_list=[]):
             try:
                 scls = pm.skinCluster(joint_list, geo, **kwargs)[0]
             except RuntimeError:
-                print 'bad bind' + str(RuntimeError)
+                print ('bad bind' + str(RuntimeError))
 
         for wt_file in weight_files:
 
@@ -113,7 +113,7 @@ def load_weights(weight_dir, geo_list=[], joint_list=[]):
                 try:
                     layerData.saveTo(wt_file.replace('.json', 'Shape'))
                 except Exception as e:
-                    print 'warning:' + str(e)
+                    print ('warning:' + str(e))
 
             #bSkinSaver2.bLoadSkinValues(loadOnSelection=False, inputFile=fullpath_weight_file)
     else:

@@ -7,6 +7,9 @@ NOTE: when attaching finger joints, only use the base joint of the finger and at
 
 TODO: loop through every finger give a proxy controls controller with fk ik switch to put on every fk and ik
 controller for that specific finger """
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import pymel.core as pm
 import maya.OpenMaya as om
 import journey.lib.control as ctrl
@@ -56,7 +59,7 @@ class Finger(lo.Module):
         self.meta_f_ctrls_offset = []
         self.meta_f_ctrls = []
         for i, driven in enumerate(self.driven):
-            print driven
+            print( driven)
             prefix = tools.split_at(driven, '_', 2)
             letter = tools.int_to_letter(i).capitalize()
 
@@ -87,7 +90,7 @@ class Finger(lo.Module):
 
             child_joints = pm.listRelatives(driven, children=True, ad=True, type='joint')
             child_joints.reverse()
-            print child_joints
+            print( child_joints)
             if self.incl_last_child is False:
                 del(child_joints[-1])
 

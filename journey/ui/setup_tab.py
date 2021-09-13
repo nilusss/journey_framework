@@ -1,3 +1,4 @@
+import sys
 import json
 from PySide2 import QtWidgets, QtGui, QtCore
 from shiboken2 import wrapInstance, getCppPointer
@@ -8,6 +9,8 @@ import journey.lib.serialization as se
 import pymel.core as pm
 import maya.cmds as mc
 import maya.mel as mel
+if sys.version_info.major >= 3:
+    from importlib import reload
 import traceback
 from functools import partial
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin, MayaQDockWidget
@@ -174,7 +177,7 @@ class SetupTabUI(QtWidgets.QWidget):
     ###############
     def full_import_rig(self):
         if self.char_name_le.text() and self.filepath_le.text() and self.filepath_builder_le.text() and self.filepath_skin_le.text():
-            print 'ass'
+            print('heeee')
             self.on_import_builder()
             self.parent_inst.guides_tab.on_rig_guides(skip_dialog=True)
         else:
@@ -248,7 +251,7 @@ class SetupTabUI(QtWidgets.QWidget):
             pm.error("Modules already exists in the scene. Please clean up your scene before importing new guides!")
         elif filepath:
             pm.undoInfo(openChunk=True, chunkName="importbuilder")
-            print filepath
+            print( filepath)
             with open(filepath, 'r') as json_file:
                 jdata = json.load(json_file)
                 for data in jdata:

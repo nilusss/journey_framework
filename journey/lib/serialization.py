@@ -15,6 +15,7 @@ def decode_module(o):
     if o.get('CLASS_NAME'):
         module = str(o.get('CLASS_NAME')).lower()
         exec ("return_class = mo.{}.{}()".format(module, o.get('CLASS_NAME')))
+        return_class = locals()['return_class']
         a = return_class
         a.__dict__.update((k, v) for k, v in o.iteritems())
         return (a)
@@ -24,8 +25,9 @@ def decode_module(o):
 def decode_guide(o):
     import journey.lib.guides as guides
     if o.get('CLASS_NAME'):
-        print o.get('prefix')
-        exec ("return_class = guides.{}(prefix='{}')".format(o.get('CLASS_NAME'), o.get('prefix')))
+        # print(o.get('prefix')
+        exec("return_class = guides.{}(prefix='{}')".format(o.get('CLASS_NAME'), o.get('prefix')))
+        return_class = locals()['return_class']
         a = return_class
         a.__dict__.update((k, v) for k, v in o.iteritems())
         return (a)

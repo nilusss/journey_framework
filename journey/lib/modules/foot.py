@@ -7,6 +7,9 @@ TODO: parent constrain leg_end_joint to leg_endik_joint leg_endfk_jnt
 TODO: add toe tap by constraining toe IK
 TODO: SHOULD WORK, NEED MORE TESTING - module doesn't work correctly when parented to leg module. Leg end joint doesn't rotate when the ankle is lifted
 """
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import pymel.core as pm
 import maya.OpenMaya as om
 import journey.lib.control as ctrl

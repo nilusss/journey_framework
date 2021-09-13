@@ -1,3 +1,4 @@
+import sys
 from PySide2 import QtWidgets, QtGui, QtCore
 from shiboken2 import wrapInstance, getCppPointer
 import webbrowser
@@ -13,6 +14,8 @@ import pymel.core as pm
 import maya.cmds as mc
 import json
 import os
+if sys.version_info.major >= 3:
+    from importlib import reload
 import sys
 from functools import partial
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin, MayaQDockWidget
@@ -34,8 +37,10 @@ def get_maya_window():
     Return maya main window as a python object
     """
     ptr = mui.MQtUtil.mainWindow()  # ptr = pointer
-    return wrapInstance(long(ptr), QtWidgets.QWidget)
-
+    if sys.version_info.major >= 3:
+        return wrapInstance(int(ptr), QtWidgets.QWidget)
+    else:
+        return wrapInstance(long(ptr), QtWidgets.QWidget)
 
 def restore(settings):
     finfo = QtCore.QFileInfo(settings.fileName())
@@ -288,7 +293,7 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
             "builder_file": self.config_tab.filepath_builder_le.text(),
             "skin_weights_dir": self.config_tab.filepath_skin_le.text(),
         }
-        print json_value
+        # print json_value
         return json_value
 
     def save_dialog(self, json_value):
@@ -338,8 +343,8 @@ class JourneyMainUI(QtWidgets.QWidget, se.Serialize):
         """TODO: REMOVE FUNCTION LATER. ONLY USED FOR LOADING A PRESET WHEN SHOWING UI"""
         filepath = 'C:/Users/nilas/Documents/maya/2019/modules/journey_framework/journey/presets/bingbong.json'
         self.load_preset(filepath)
-        
-    
+
+
     def load_preset(self, filepath):
         if filepath:
             with open(filepath, 'r') as json_file:

@@ -4,6 +4,9 @@ used for: Metacarpal (Fingers), Metatarsal (Toes)
 
 NOTE: inherit set_base and set_prefix from Module class
 """
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import pymel.core as pm
 import maya.OpenMaya as om
 import journey.lib.control as ctrl

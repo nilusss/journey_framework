@@ -4,6 +4,9 @@ create a three chain setup
 
 NOTE: inherit set_base and set_prefix from Module class
 """
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import pymel.core as pm
 import maya.OpenMaya as om
 import journey.lib.control as ctrl
@@ -55,8 +58,8 @@ class Limb(lo.Module):
         # create module from parent class
         try:
             super(Limb, self).create_structure()
-        except TypeError, e:
-            print "Failure initialising Retrieval --> self: %r"
+        except TypeError as e:
+            print("Failure initialising Retrieval --> self: %r")
             raise e
 
         self.offset_joint = pm.listRelatives(self.driven[0], parent=True)

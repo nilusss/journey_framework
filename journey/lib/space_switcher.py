@@ -4,7 +4,9 @@ module for setting up space switching on objects
 setup_switcher - creates space switching with the given arguments
 add_space - adds a new space for the existing space switching system
 """
-
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import pymel.core as pm
 import journey.lib.utils.tools as tools
 reload(tools)

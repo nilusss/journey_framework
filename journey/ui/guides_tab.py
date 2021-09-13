@@ -1,9 +1,12 @@
+import sys
 import json
 from PySide2 import QtWidgets, QtGui, QtCore
 from shiboken2 import wrapInstance, getCppPointer
 import maya.OpenMayaUI as mui
 import journey.ui.builder as builder_ui
 import journey.lib.guides as guides
+if sys.version_info.major >= 3:
+    from importlib import reload
 
 import fnmatch
 import pymel.core as pm
@@ -205,17 +208,26 @@ class GuidesTabUI(QtWidgets.QWidget):
                 mc.undoInfo(closeChunk=True, chunkName=self.selected_guide_inst.name + "_antOff")
 
     def on_change_selection_in_viewport(self):
-        print "from viewport"
+        # print( "from viewport")
         sel_list = pm.ls(sl=True)
         if sel_list:
             for item in sel_list:
                 if pm.objExists(item):
-                    for list_index in xrange(self.list_wdg.count()):
-                        # get guide object stored in the QtListWidgetItem
-                        if self.list_wdg.item(list_index).data(QtCore.Qt.UserRole).base_ctrl == item:
-                            self.list_wdg.setCurrentItem(self.list_wdg.item(list_index))
-                            self.selected_guide_inst = self.list_wdg.currentItem().data(QtCore.Qt.UserRole)
-                            self.change_settings_panel()
+                    if sys.version_info.major >= 3:
+                        for list_index in range(self.list_wdg.count()):
+                            print (list_index)
+                            # get guide object stored in the QtListWidgetItem
+                            if self.list_wdg.item(list_index).data(QtCore.Qt.UserRole).base_ctrl == item:
+                                self.list_wdg.setCurrentItem(self.list_wdg.item(list_index))
+                                self.selected_guide_inst = self.list_wdg.currentItem().data(QtCore.Qt.UserRole)
+                                self.change_settings_panel()
+                    else:
+                        for list_index in xrange(self.list_wdg.count()):
+                            # get guide object stored in the QtListWidgetItem
+                            if self.list_wdg.item(list_index).data(QtCore.Qt.UserRole).base_ctrl == item:
+                                self.list_wdg.setCurrentItem(self.list_wdg.item(list_index))
+                                self.selected_guide_inst = self.list_wdg.currentItem().data(QtCore.Qt.UserRole)
+                                self.change_settings_panel()
         else:
             self.list_wdg.clearSelection()
             self.selected_guide_inst = ''
@@ -223,7 +235,7 @@ class GuidesTabUI(QtWidgets.QWidget):
             self.settings_frame.hide()
 
     def on_change_item_selection(self):
-        print "from UI"
+        # print( "from UI")
         get_sel = ''
         sel = pm.ls(sl=True)
         if not sel:
@@ -231,17 +243,17 @@ class GuidesTabUI(QtWidgets.QWidget):
             #self.check_if_guides_exists()
         try:
             get_sel = self.list_wdg.currentItem().data(QtCore.Qt.UserRole).base_ctrl
-            print get_sel
+            # print( get_sel)
         except:
             pass
         if pm.objExists(get_sel):
-            print "got object"
+            # print( "got object")
             pm.select(get_sel)
             self.selected_guide_inst = self.list_wdg.currentItem().data(QtCore.Qt.UserRole)
             self.change_settings_panel()
         # else:
             # self.check_if_guides_exists()
-            # print "cant find"
+            # print( "cant find")
             # pm.select(clear=True)
             # selected_list = self.list_wdg.selectionModel().selectedIndexes()
             # for index in selected_list:
@@ -249,7 +261,7 @@ class GuidesTabUI(QtWidgets.QWidget):
             # self.selected_guide_inst = ''
 
     def check_if_guides_exists(self):
-        print "## CHECK IF GUIDES EXISTS ##"
+        # print( "## CHECK IF GUIDES EXISTS ##")
         items = []
         for x in range(self.list_wdg.count()):
             items.append(self.list_wdg.item(x))
@@ -263,17 +275,17 @@ class GuidesTabUI(QtWidgets.QWidget):
             if not item_obj:
                 item_obj = ''
             if not pm.objExists(item_obj):
-                print "OBJECT DOESNT EXIST"
+                # print( "OBJECT DOESNT EXIST")
                 self.list_wdg.takeItem(object_row)
             #self.list_wdg.takeItem(index)
         #self.get_guides()
 
-        print "## DONE ##"
+        # print( "## DONE ##")
 
     def on_delete_guide(self):
         if self.selected_guide_inst:
             self.selected_guide_inst.delete_guide()
-            print "SELECTED INST " + str(self.selected_guide_inst)
+            # print( "SELECTED INST " + str(self.selected_guide_inst))
             object_row = self.list_wdg.row(self.list_wdg.currentItem())
             del self.selected_guide_inst
             self.list_wdg.takeItem(object_row)
@@ -291,7 +303,7 @@ class GuidesTabUI(QtWidgets.QWidget):
                                                              "",
                                                              "JSON (*.json)",
                                                              "JSON (*.json)")
-            print filename[0]
+            # print( filename[0])
             if filename[0]:
                 with open(filename[0], 'w') as json_file:
                     get_modules = pm.ls(assemblies=True)
@@ -306,23 +318,23 @@ class GuidesTabUI(QtWidgets.QWidget):
                                 if match:
                                     if 'HIDDEN' not in c.name():
                                         get_parent = pm.listRelatives(c.name(), parent=True)[0]
-                                        print get_parent
+                                        # print( get_parent)
                                         if "MIRROR" not in get_parent.name():
                                             modules.append(c)
-                                            print modules
+                                            # print( modules)
                     for i, module in enumerate(modules):
                         custom_name = pm.PyNode(module).getAttr('custom_name')
-                        print custom_name
+                        # print( custom_name)
                         item_obj = ''
                         try:
                             item_obj = self.list_wdg.findItems(custom_name, QtCore.Qt.MatchExactly)[0].data(QtCore.Qt.UserRole)
-                            print item_obj
+                            # print( item_obj)
                         except:
                             pass
                         try:
                             if pm.objExists(item_obj.base_ctrl):
                                 obj_to_dict = item_obj.serialize()
-                                print obj_to_dict
+                                # print( obj_to_dict)
                                 guide_dict_list.append(obj_to_dict)
                         except:
                             raise
@@ -330,7 +342,7 @@ class GuidesTabUI(QtWidgets.QWidget):
                     #json_write = json.dumps(guide_dict_list, )
                     json.dump(guide_dict_list, json_file)
                     #jdata = json.load(json_file)
-                    print 'writing to json'
+                    # print( 'writing to json')
         else:
             pm.warning('No guides in scene to save!')
 
@@ -344,10 +356,10 @@ class GuidesTabUI(QtWidgets.QWidget):
             self.selected_guide_inst = self.list_wdg.currentItem().data(QtCore.Qt.UserRole)
             if self.get_mirror_state():
                 mir_index = self.dropdown_mirror_menu.findText("on", QtCore.Qt.MatchFixedString)
-                print "mirror is on"
+                # print( "mirror is on")
 
             else:
-                print "mirror is off"
+                # print( "mirror is off")
                 mir_index = self.dropdown_mirror_menu.findText("off", QtCore.Qt.MatchFixedString)
             try:
                 if mir_index >= 0:
@@ -356,10 +368,10 @@ class GuidesTabUI(QtWidgets.QWidget):
                 pass
             if self.get_ant_state():
                 ant_index = self.dropdown_ant_menu.findText("on", QtCore.Qt.MatchFixedString)
-                print "ant is on"
+                # print( "ant is on")
 
             else:
-                print "ant is off"
+                print("ant is off")
                 ant_index = self.dropdown_ant_menu.findText("off", QtCore.Qt.MatchFixedString)
             try:
                 if ant_index >= 0:
@@ -378,10 +390,10 @@ class GuidesTabUI(QtWidgets.QWidget):
 
         for obj in guide_objects:
             try:
-                print "IN"
+                print("IN")
                 guide_list_item = QtWidgets.QListWidgetItem()
                 guide_list_item.setData(QtCore.Qt.UserRole, obj)
                 guide_list_item.setText(obj.prefix)
                 self.list_wdg.addItem(guide_list_item)
             except Exception as e:
-                print str(e)
+                print(str(e))

@@ -9,6 +9,9 @@ NOTE: When creating upper and lower curves untick: Conform to smooth mesh previe
 
 TODO: update create function so it works with being deserialized
 """
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import pymel.core as pm
 import journey.lib.control as ctrl
 import journey.lib.utils.tools as tools

@@ -3,6 +3,9 @@ module containing different guide setups.
 TODO: take parent module scale into account when scaling child modules
 TODO: Scaling guide joints causes the builder to crash - currently disabled guide joint scaling
 """
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import re
 import os
 import fnmatch
@@ -13,6 +16,7 @@ import journey.lib.utils.tools as tools
 import journey.lib.utils.deform as deform
 import journey.lib.layout as lo
 import maya.mel as mel
+
 from maya.cmds import DeleteHistory
 #import journey.lib.modules as mdls
 
@@ -119,19 +123,19 @@ class Builder():
             self.single_joints2 = []
             if 'HIDDEN' not in module.name():
                 p_joint = self.get_parent_joint(module)
-                print 'PARENT JOINT: ' + str(p_joint)
+                print('PARENT JOINT: ' + str(p_joint))
 
                 # split module_joints by '.' usually only used by meta and finger modules
                 get_module_joints = module.getAttr('module_joints').split('.')
                 get_module_joints = [x for x in get_module_joints if x]
-                print "MODULE JOINTS WITH . : " + str(get_module_joints)
+                print( "MODULE JOINTS WITH . : " + str(get_module_joints))
                 if len(get_module_joints) > 1:
                     pm.PyNode(module).attr('module_joints').set('')
                     for chain in get_module_joints:
-                        print chain
+                        print( chain)
                         # split by # to get continuing chain if it excists
                         chain = chain.split('#')
-                        print chain
+                        print( chain)
 
                         chain = tools.joint_duplicate(chain, '_result', self.base_rig.joints_grp)
                         # pm.makeIdentity(chain[0], apply=True)
@@ -167,12 +171,12 @@ class Builder():
                                     module.attr('single_joints2').set(j)
                             pm.select(None)
 
-                        print n_chain
+                        print( n_chain)
                         get_transform = n_chain[0].getParent()
                         get_transform_parent = get_transform.getParent()
-                        print get_transform_parent
+                        print( get_transform_parent)
                         if 'transform' in get_transform.name():
-                            print get_transform.name()
+                            print( get_transform.name())
                             pm.makeIdentity(get_transform, s=True, apply=True)
                             pm.parent(n_chain[0], get_transform_parent)
                         pm.makeIdentity(n_chain[0], r=True, apply=True)
@@ -202,14 +206,14 @@ class Builder():
                         j.attr('overrideDisplayType').set(0)
                         n_chain.append(j)
                         pm.select(None)
-                    print n_chain
+                    print( n_chain)
                     get_transform = n_chain[0].getParent()
-                    print 'TRANSFORM IS: ' + get_transform
+                    print( 'TRANSFORM IS: ' + get_transform)
                     get_transform_parent = get_transform.getParent()
-                    print get_transform_parent
+                    print( get_transform_parent)
                     if 'transform' in get_transform.name():
-                        print 'FOUND TRANSFORM'
-                        print get_transform.name()
+                        print( 'FOUND TRANSFORM')
+                        print( get_transform.name())
                         pm.makeIdentity(get_transform, s=True, apply=True)
                         pm.parent(n_chain[0], get_transform_parent)
                     pm.makeIdentity(n_chain[0], r=True, apply=True)
@@ -354,7 +358,7 @@ class Builder():
                 """CHECK FOR LIMB MODULE. IF LIMB MODULE IS PARENT SKIP CREATION OF FOOT
                 MODULE AND WAIT FOR LIMB PARENT MODULE TO BE CREATED"""
                 if 'Limb' in pm_name:
-                    print 'found parent module'
+                    print( 'found parent module')
                     foot_rig = foot.Foot(limb_rig.ik_joints[-1],
                                           joints[0],
                                           joints[1],
@@ -446,7 +450,7 @@ class Builder():
         parent = base_ctrl.getAllParents()
         if parent:
             for p in parent:
-                print p
+                print( p)
                 if '_guide' in p.name():
                     parent = p
                     break

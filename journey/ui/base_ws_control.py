@@ -1,12 +1,14 @@
 """
 Base workspace control module
 """
-
+import sys
 from PySide2 import QtWidgets, QtGui, QtCore
 from shiboken2 import wrapInstance, getCppPointer
 import journey.lib.guides as guides
 import maya.OpenMayaUI as mui
 import pymel.core as pm
+if sys.version_info.major >= 3:
+    from importlib import reload
 import traceback
 from functools import partial
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin, MayaQDockWidget
@@ -34,9 +36,12 @@ class BaseWorkspaceControl(object):
         if widget:
             self.widget = widget
             self.widget.setAttribute(QtCore.Qt.WA_DontCreateNativeAncestors)
-
-            ws_control_ptr = long(mui.MQtUtil.findControl(self.name))
-            widget_ptr = long(getCppPointer(self.widget)[0])
+            if sys.version_info.major >= 3:
+                ws_control_ptr = int(mui.MQtUtil.findControl(self.name))
+                widget_ptr = int(getCppPointer(self.widget)[0])
+            else:
+                ws_control_ptr = long(mui.MQtUtil.findControl(self.name))
+                widget_ptr = long(getCppPointer(self.widget)[0])
 
             mui.MQtUtil.addWidgetToMayaLayout(widget_ptr, ws_control_ptr)
 

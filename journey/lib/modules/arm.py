@@ -1,6 +1,9 @@
 """
 arm module inheriting from limb class
 """
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import pymel.core as pm
 import journey.lib.control as ctrl
 import journey.lib.utils.tools as tools
@@ -41,8 +44,8 @@ class Arm(li.Limb):
     def create(self):
         try:
             super(Arm, self).create()
-        except TypeError, e:
-            print "Failure initialising Retrieval --> self: %r"
+        except TypeError as e:
+            print("Failure initialising Retrieval --> self: %r")
             raise e
 
         if self.clavicle:

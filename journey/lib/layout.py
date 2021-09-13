@@ -3,6 +3,9 @@ module for making top rig structure and rig module structure
 
 TODO: update imports for cleaner look
 """
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import os
 import pymel.core as pm
 import journey.lib.utils.tools as tools

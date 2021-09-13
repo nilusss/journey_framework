@@ -7,6 +7,9 @@ https://vimeo.com/66583205
 NOTE: inherit set_base and set_prefix from Module class
 NOTE: When creating upper and lower curves untick: Conform to smooth mesh preview and set to 1 linear
 """
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import pymel.core as pm
 import journey.lib.control as ctrl
 import journey.lib.utils.tools as tools

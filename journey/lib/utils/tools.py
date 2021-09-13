@@ -94,7 +94,7 @@ def rename_shape(transform):
                 new_shape = pm.rename(shape, transform+'Shape')
             pm.select(None)
         else:
-            print "No children in transform: " + transform
+            print( "No children in transform: " + transform)
     return transform
 
 
@@ -123,13 +123,21 @@ def lock_channels(obj, channels=['t', 'r', 's'], t_axis=['x', 'y', 'z'], r_axis=
     Returns:
         list, of all attributes that has been locked
     """
+    global t_axiss
+    global r_axiss
+    global s_axiss
+    t_axiss = t_axis
+    r_axiss = r_axis
+    s_axiss = s_axis
+
     # lock control channels
     single_attr_lock_list = []
 
     for ch in channels:
         if ch in ['t', 'r', 's']:
-            exec('return_axis = {}_axis'.format(ch))
-            for axis in return_axis:
+            t_axis = t_axis
+            exec('return_axis = {}_axiss'.format(ch))
+            for axis in locals()["return_axis"]:
                 attr = ch + axis
                 single_attr_lock_list.append(attr)
         else:
@@ -151,13 +159,20 @@ def unlock_channels(obj, channels=['t', 'r', 's'], t_axis=['x', 'y', 'z'], r_axi
     Returns:
         list, of all attributes that has been unlocked
     """
+    global t_axiss
+    global r_axiss
+    global s_axiss
+    t_axiss = t_axis
+    r_axiss = r_axis
+    s_axiss = s_axis
+
     # unlock control channels
     single_attr_unlock_list = []
 
     for ch in channels:
         if ch in ['t', 'r', 's']:
-            exec('return_axis = {}_axis'.format(ch))
-            for axis in return_axis:
+            exec('return_axis = {}_axiss'.format(ch))
+            for axis in locals()["return_axis"]:
                 attr = ch + axis
                 single_attr_unlock_list.append(attr)
         else:
@@ -169,7 +184,7 @@ def unlock_channels(obj, channels=['t', 'r', 's'], t_axis=['x', 'y', 'z'], r_axi
 
 
 # python wrapper of the mel command getNextFreeMultiIndex
-def get_next_free_multi_index( attr_name, start_index ):
+def get_next_free_multi_index(attr_name, start_index):
     """Find the next unconnected multi index starting at the passed in index."""
     # assume a max of 10 million connections
     while start_index < 10000000:

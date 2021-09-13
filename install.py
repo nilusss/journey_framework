@@ -22,7 +22,10 @@ def onMayaDroppedPythonFile(*args):
     get_shelf = pm.tabLayout(shelf_top_level, query=True, selectTab=True)
 
     pm.setParent(get_shelf)
-    pm.shelfButton(command="import pymel.core as pm\n"
+    pm.shelfButton(command="import sys\n\n"
+                           "if sys.version_info.major >= 3:\n"
+                           "    from importlib import reload\n"
+                           "import pymel.core as pm\n"
                            "try:\n"
                            "    import journey.ui.main as maui\n"
                            "    print(\"LOADING UI...\")\n"

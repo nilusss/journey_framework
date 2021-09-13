@@ -8,6 +8,9 @@ NOTE: when attaching finger joints, only use the base joint of the finger and at
 TODO: loop through every finger give a proxy controls controller with fk ik switch \
 TODO: \to put on every fk and ik controller for that specific finger
 """
+import sys
+if sys.version_info.major >= 3:
+    from importlib import reload
 import pymel.core as pm
 import maya.OpenMaya as om
 import journey.lib.control as ctrl

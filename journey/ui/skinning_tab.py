@@ -1,3 +1,4 @@
+import sys
 import json
 from PySide2 import QtWidgets, QtGui, QtCore
 from shiboken2 import wrapInstance, getCppPointer
@@ -6,6 +7,8 @@ import maya.OpenMayaUI as mui
 import journey.ui.base_ws_control as bwsc
 import journey.lib.serialization as se
 import pymel.core as pm
+if sys.version_info.major >= 3:
+    from importlib import reload
 try:
     import journey.lib.utils.deform as deform
     reload(deform)
@@ -129,7 +132,7 @@ class SkinningTabUI(QtWidgets.QWidget):
             filepath = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Skin Weights Dir", "",
                                                                   QtWidgets.QFileDialog.ShowDirsOnly)
             if filepath:
-                print filepath
+                # print filepath
                 deform.save_weights(filepath, geo_list)
             if pm.ls('c_root_result_jnt'):
                 pm.parent('c_root_result_jnt', 'joints_grp')
