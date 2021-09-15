@@ -3,6 +3,7 @@ module containing different guide setups.
 NOTE: CONTROLLERS MADE WITH ctrl.Control needs 'channels=['v']'
 TODO: MIRROR WITHOUT THE NEED TO HAVE A PARENT MODULE TO ATTACH TO
 """
+import importlib
 import sys
 import re
 import fnmatch
@@ -440,8 +441,10 @@ class Guides(se.Serialize):
             dup_axis = -1
 
         pm.select(None)
-        exec('dup_guide = Draw{}(prefix=\'{}\')'.format(self.module_name, prefix))
-        dup_guide = locals()['dup_guide']
+        class_ = getattr(importlib.import_module("journey.lib.guides"), "Draw" + str(self.module_name))
+        dup_guide = class_(prefix=prefix)
+        # exec('dup_guide = Draw{}(prefix=\'{}\')'.format(self.module_name, prefix))
+        # dup_guide = locals()['dup_guide']
         # if 'Foot' in self.module_name:
         #     dup_guide.parent = dup_parent
         try:
@@ -456,8 +459,10 @@ class Guides(se.Serialize):
         self.base_ctrl.attr('mirror_guide_base_ctrl').set(self.mirror_guide.base_ctrl)
         self.mirror_guide_base_ctrl = self.mirror_guide.base_ctrl
         pm.select(None)
-        exec('hidden_guide = Draw{}(prefix=\'{}\')'.format(self.module_name, prefix + 'HIDDEN'))
-        dup_guide = locals()['dup_guide']
+        class_ = getattr(importlib.import_module("journey.lib.guides"), "Draw" + str(self.module_name))
+        hidden_guide = class_(prefix=prefix + 'HIDDEN')
+        # exec('hidden_guide = Draw{}(prefix=\'{}\')'.format(self.module_name, prefix + 'HIDDEN'))
+        # dup_guide = locals()['dup_guide']
         try:
             hidden_guide.amount = self.amount
         except:
@@ -1538,9 +1543,11 @@ def get_guides_in_scene():
         except:
             pass
 
-
-        exec('guide = Draw{}(prefix=\'{}\')'.format(module_namespace, custom_name))
-        guide = locals()['guide']
+        class_ = getattr(importlib.import_module("journey.lib.guides"), "Draw" + str(module_namespace))
+        print("CLAS IS THIS " + str(class_))
+        guide = class_(prefix=custom_name)
+        # exec('guide = Draw{}(prefix=\'{}\')'.format(module_namespace, custom_name))
+        # guide = locals()['guide']
         guide.module_name = module_namespace
         guide.prefix = custom_name
         guide.parent = module.getParent()
@@ -1566,7 +1573,7 @@ def get_guides_in_scene():
         except:
             pass
 
-        print( "\n\n\nNEW")
+        print("\n\n\nNEW")
         if 'limb' in guide.base_ctrl.name():
             try:
                 print( guide.mirror_guide_base_ctrl.split('_base')[0])
