@@ -63,7 +63,7 @@ class Arm(li.Limb):
             if self.stretch:
                 clavicle_ctrl.set_constraint(self.arm_ik.upper_null)
 
-            clavicle_ctrl.set_constraint(self.arm_fk.fk_dict.values()[0].get_ctrl(), channels=['t'])
+            clavicle_ctrl.set_constraint(list(self.arm_fk.fk_dict.values())[0].get_ctrl(), channels=['t'])
 
             tools.matrix_constraint(clavicle_chain[0], self.clavicle)
 
@@ -75,7 +75,7 @@ class Arm(li.Limb):
                                              base_rig=self.base_rig)
             ss_ik.setup_switcher()
 
-            ss_fk = space.SpaceSwitcherLogic(clavicle_ctrl.get_ctrl(), self.arm_fk.fk_dict.values()[0].get_ctrl(),
+            ss_fk = space.SpaceSwitcherLogic(clavicle_ctrl.get_ctrl(), list(self.arm_fk.fk_dict.values())[0].get_ctrl(),
                                              base_rig=self.base_rig)
             ss_fk.setup_switcher()
 

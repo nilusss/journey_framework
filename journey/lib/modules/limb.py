@@ -108,7 +108,7 @@ class Limb(lo.Module):
         reverse = pm.createNode('reverse', n=self.prefix + 'rev_vis')
         pm.connectAttr(self.blend_ctrl.get_ctrl() + '.blend', reverse + '.inputX')
 
-        for driven in self.arm_fk.fk_dict.values():
+        for driven in list(self.arm_fk.fk_dict.values()):
             pm.connectAttr(reverse + '.outputX', driven.get_offset() + '.v')
 
         pm.connectAttr(self.blend_ctrl.get_ctrl() + '.blend', self.arm_ik.ik_ctrl.get_offset() + '.v')
@@ -122,7 +122,7 @@ class Limb(lo.Module):
                 if self.stretch:
                     tools.matrix_constraint(self.parent_joint, self.arm_ik.upper_null, mo=True)
                 tools.matrix_constraint(self.parent_joint, self.ik_joints[0], mo=True)
-                tools.matrix_constraint(self.parent_joint, self.arm_fk.fk_dict.values()[0].get_offset(), mo=True)
+                tools.matrix_constraint(self.parent_joint, lsit(self.arm_fk.fk_dict.values())[0].get_offset(), mo=True)
             if self.spaces:
                 ss_pole = space.SpaceSwitcherLogic(self.arm_ik.ik_ctrl.get_ctrl(), self.arm_ik.pv_ctrl.get_ctrl(),
                                                    base_rig=self.base_rig)

@@ -1,5 +1,6 @@
 # from journey.vendor.Qt import QtWidgets, QtGui, QtCore
 import sys
+
 if sys.version_info.major >= 3:
     from importlib import reload
 from PySide2 import QtWidgets, QtGui, QtCore
@@ -8,6 +9,8 @@ import journey.lib.guides as guides
 import maya.OpenMayaUI as mui
 import pymel.core as pm
 import maya.cmds as mc
+import importlib
+
 import traceback
 from functools import partial
 # import sip
@@ -110,8 +113,11 @@ class BuilderUI(QtWidgets.QDialog):
             self.buttons.append(btn)
 
             # get variables for setting panel ## amount
-            exec('gds = guides.{}'.format(cls))
-            get_members = all_members(locals()["gds"])
+            class_ = getattr(importlib.import_module("journey.lib.guides"), str(cls))
+            print("CLAS IS THIS " + str(class_))
+            gds = class_
+            # exec('gds = guides.{}'.format(cls))
+            get_members = all_members(gds)
             for membr in get_members.keys():
                 if 'amount' in membr:
                     self.class_for_amount.append(cls.replace('Draw', ''))
@@ -196,17 +202,32 @@ class BuilderUI(QtWidgets.QDialog):
                 print('ass')
                 try:
                     amount = int(self.amount_le.text())
-                    exec('guide_am = guides.{0}(prefix=\'{1}\', amount={2}).draw()'.format(guide_type,
-                                                                                           prefix,
-                                                                                           amount))
-                    guide_am = globals()['guide_am']
+                    class_ = getattr(importlib.import_module("journey.lib.guides"), str(guide_type))
+                    print("CLAS IS THIS " + str(class_))
+                    guide_am = class_(prefix=prefix, amount=amount)
+                    guide_am.draw()
+                    # exec('guide_am = guides.{0}(prefix=\'{1}\', amount={2})'.format(guide_type,
+                    #                                                                        prefix,
+                    #                                                                        amount))
+                    # guide_am = globals()['guide_am']
+                    # guide_am.draw()
                     print("THIS IS GUIDE" + guide_am)
                 except Exception as e:
                     raise
             else:
                 print("bingonb")
-                exec('guide = guides.{}(prefix=\'{}\').draw()'.format(guide_type, prefix))
-                guide = globals()['guide']
+                print(guides)
+                # modl = importlib.import_module("journey.lib.guides")
+                # print("MODULE " + modl)
+                class_ = getattr(importlib.import_module("journey.lib.guides"), str(guide_type))
+                print("CLAS IS THIS " + str(class_))
+                guide = class_(prefix=prefix)
+                guide.draw()
+                # print(inst)
+                # import pdb;pdb.set_trace()
+                # exec('guide = guides.{}(prefix=\'{}\')'.format(guide_type, prefix))
+                # guide = globals()['guide']
+                # guide.draw()
                 print("THIS IS GUIDE" + guide + 'EUISDFHJBNUIOHNSDF')
         except Exception as e:
             raise
