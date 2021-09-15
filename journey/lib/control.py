@@ -3,6 +3,7 @@ module for making curve controls
 
 TODO: fix set_shape to orient correctly - fix cycles
 """
+import importlib
 import sys
 import pymel.core as pm
 if sys.version_info.major >= 3:
@@ -55,8 +56,10 @@ class Control:
 
     def set_shape(self, shape):
         if self.get_ctrl():
-            exec ("return_shape = shapes.{0}(self.scale, self.prefix + '1_ctrl')".format(shape))
-            pm.delete(pm.parentConstraint(self.get_ctrl(), locals()["return_shape"]))
+            class_ = getattr(importlib.import_module("journey.lib.utils.shapes"), str(shape))
+            return_shape = class_(self.scale, self.prefix + '1_ctrl')
+            # exec("return_shape = shapes.{0}(self.scale, self.prefix + '1_ctrl')".format(shape))
+            pm.delete(pm.parentConstraint(self.get_ctrl(), return_shape))
             for shape in pm.PyNode(self.get_ctrl()).getShapes():
                 pm.delete(shape)
             for shape in pm.PyNode(return_shape).getShapes():
@@ -66,8 +69,10 @@ class Control:
             self.set_rotation()
         else:
             # exec("return_shape = shapes.{0}({1}, {2})".format(self.shape, self.scale, self.prefix + '_ctrl'))
-            exec("return_shape = shapes.{0}(self.scale, self.prefix + '_ctrl')".format(shape))
-            self.ctrl_object = locals()["return_shape"]
+            # exec("return_shape = shapes.{0}(self.scale, self.prefix + '_ctrl')".format(shape))
+            class_ = getattr(importlib.import_module("journey.lib.utils.shapes"), str(shape))
+            return_shape = class_(self.scale, self.prefix + '_ctrl')
+            self.ctrl_object = return_shape
             print(self.ctrl_object)
 
         return self.ctrl_object
@@ -90,6 +95,7 @@ class Control:
             [pm.setAttr(s + '.ovc', color.YELLOW) for s in self.ctrl_object.getShapes()]
 
         if ctrl_color:
+
             exec('clr_key = color.{0}'.format(ctrl_color))
             clr_key = locals()['clr_key']
             [pm.setAttr(s + '.ovc', clr_key) for s in self.ctrl_object.getShapes()]
