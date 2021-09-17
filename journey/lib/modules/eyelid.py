@@ -24,7 +24,7 @@ class Eyelid(lo.Module):
     def __init__(self,
                  upper_crv,
                  lower_crv,
-                 eye_joint,
+                 eye_joint="",
                  joint_radius=0.4,
                  prefix='new',
                  scale=1.0,
@@ -61,9 +61,9 @@ class Eyelid(lo.Module):
         lower_joints = tools.joint_on_curve(self.lower_crv, prefix=self.prefix+'Lower',
                                             parent=False, radius=self.joint_radius)
 
-        pm.delete(lower_joints[0], lower_joints[-1])
-        del(lower_joints[0])
-        del(lower_joints[-1])
+        # pm.delete(lower_joints[0], lower_joints[-1])
+        # del(lower_joints[0])
+        # del(lower_joints[-1])
         aim_loc_upper_list = []
         aim_loc_lower_list = []
         loc_grp = pm.createNode('transform', n=self.prefix + '_loc_offset_grp')
@@ -85,10 +85,13 @@ class Eyelid(lo.Module):
                 else:
                     aim_loc_lower_list.append(aim_loc)
 
+
                 # create center joints
                 pm.select(None)
                 center_joint = pm.joint(name=joint.replace('_result', '_center'), radius=0.1)
-                pm.delete(pm.pointConstraint(self.eye_joint, center_joint))
+
+                if pm.objExists(self.eye_joint):
+                    pm.delete(pm.pointConstraint(self.eye_joint, center_joint))
 
                 pm.aimConstraint(aim_loc, center_joint, maintainOffset=True, weight=1, aimVector=(1, 0, 0),
                                  upVector=(0, 1, 0), worldUpType="scene")
@@ -98,7 +101,11 @@ class Eyelid(lo.Module):
                 pm.parent(center_joint, self.joints_grp)
                 pm.parent(aim_loc, loc_grp)
 
-        pm.parent(loc_grp, self.parts_grp)
+        print(self.parts_grp)
+        print(loc_grp)
+
+        if self.parts_grp and loc_grp:
+            pm.parent(loc_grp, self.parts_grp)
 
         # connect the locators to the high res curve
         tools.loc_on_curve(aim_loc_upper_list, self.upper_crv)
@@ -130,7 +137,6 @@ class Eyelid(lo.Module):
                            self.main_controllers[0].get_ctrl(), self.constrain_controllers[3], mo=True)
         tools.matrix_blend(self.constrain_controllers[3], self.helper_groups[3],
                            self.main_controllers[0].get_ctrl(), self.constrain_controllers[2], mo=True)
-
         # parent controllers to control group
         for c in c_upper + c_lower:
             pm.parent(c.get_offset(), self.controls_grp)
@@ -141,7 +147,8 @@ class Eyelid(lo.Module):
             pm.parent(j, cv_jnt_grp)
 
         self.main_offset = pm.createNode('transform', n=self.prefix + '_main_controllers_offset_grp')
-        pm.delete(pm.pointConstraint(self.eye_joint, self.main_offset))
+        if pm.objExists(self.eye_joint):
+            pm.delete(pm.pointConstraint(self.eye_joint, self.main_offset))
         pm.parent(self.main_offset, self.controls_grp)
         pm.parent(self.main_controllers[0].get_offset(), self.main_controllers[1].get_offset(), self.main_offset)
 
