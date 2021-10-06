@@ -31,8 +31,9 @@ def onMayaDroppedPythonFile(*args):
                            "    print(\"LOADING UI...\")\n"
                            "    reload(maui)\n"
                            "    ui = maui.show()\n"
-                           "except:\n"
-                           "    pm.warning('Can not load module. Please restart Maya')\n",
+                           "except Exception as e:\n"
+                           "    pm.warning('Can not load module. Please restart Maya')\n"
+                           "    pm.warning(str(e))\n",
                    annotation="Journey Framework",
                    label="JF",
                    image=file_path + "/journey/icons/icon.png",

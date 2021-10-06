@@ -63,7 +63,10 @@ class Foot(lo.Module):
 
     def create(self, *args):
         # create module from parent class
+        self.toe_tip = pm.duplicate(self.toe_tip)[0]
         super(Foot, self).create_structure()
+        print("THIS IS BALL JOINT")
+        print(self.ball_joint)
 
         if not self.foot_ctrl:
             self.foot_ctrl = ctrl.Control(prefix=self.prefix, trans_to=self.ankle_joint,
@@ -109,7 +112,6 @@ class Foot(lo.Module):
             ik_chain = [ankle_ik, ball_ik, toe_ik]
             pm.parent(ball_ik, ankle_ik)
             pm.parent(toe_ik, ball_ik)
-
 
             # create controllers for toe, ball, and heel
             if ball_fk:
@@ -261,6 +263,7 @@ class Foot(lo.Module):
         pm.connectAttr(foot_roll_mult + '.outputX', toe_ctrl.get_offset() + '.rotateX')
         pm.connectAttr(self.foot_ctrl_nurb + '.toespin', toe_ctrl.get_offset() + '.rotateY')
 
+        pm.select(None)
         if self.blend_ctrl:
             for driver1, driven, driver2 in zip(fk_chain, driven, ik_chain):
                 if driver2 != ik_chain[0]:
@@ -272,3 +275,4 @@ class Foot(lo.Module):
             reverse = pm.createNode('reverse', n=ball_fk_ctrl.get_ctrl() + 'rev_vis')
             pm.connectAttr(self.blend_ctrl + '.blend', reverse + '.inputX')
             pm.connectAttr(reverse + '.outputX', ball_fk_ctrl.get_offset() + '.v')
+            pm.select(None)

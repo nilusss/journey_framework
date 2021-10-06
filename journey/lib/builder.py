@@ -132,10 +132,10 @@ class Builder():
                 if len(get_module_joints) > 1:
                     pm.PyNode(module).attr('module_joints').set('')
                     for chain in get_module_joints:
-                        print( chain)
+                        print(chain)
                         # split by # to get continuing chain if it excists
                         chain = chain.split('#')
-                        print( chain)
+                        print(chain)
 
                         chain = tools.joint_duplicate(chain, '_result', self.base_rig.joints_grp)
                         # pm.makeIdentity(chain[0], apply=True)
@@ -200,7 +200,7 @@ class Builder():
                     n_chain = []
 
                     for i, j in enumerate(chain):
-                        nice_name = j.split('___')[-1]
+                        nice_name = j.split('___')[-1].split("|")[-1]
                         j = pm.rename(j, nice_name)
                         j.attr('overrideEnabled').set(0)
                         j.attr('overrideDisplayType').set(0)
@@ -237,7 +237,10 @@ class Builder():
                             pass
                     if module.getAttr('mirror_enable'):
                         pm.mirrorJoint(n_chain[0], mirrorYZ=True, mirrorBehavior=True, searchReplace=('l_', 'r_'))
-
+                        # temp solution when mirroring footBall joints...
+                        print("TRYING TO RENAME WTFFFF")
+                        if pm.ls("r_footBalr_result_jnt"):
+                            pm.rename("r_footBalr_result_jnt", "r_footBall_result_jnt")
         try:
             for p in reparent_to:
                 pm.parent(p.split('-')[0].replace('jnt1', 'jnt'), p.split('-')[1])
@@ -358,42 +361,56 @@ class Builder():
                 """CHECK FOR LIMB MODULE. IF LIMB MODULE IS PARENT SKIP CREATION OF FOOT
                 MODULE AND WAIT FOR LIMB PARENT MODULE TO BE CREATED"""
                 if 'Limb' in pm_name:
-                    print( 'found parent module')
+                    print('found parent module')
+                    # temp solution when mirroring footBall joints...
+                    print("TRYING TO RENAME WTFFFF")
+                    if pm.ls("r_footBalr_result_jnt"):
+                        print (joints[0])
+                        if joints[0] == "r_footBalr_result_jnt":
+                            joints[0].rename("r_footBall_result_jnt")
                     foot_rig = foot.Foot(limb_rig.ik_joints[-1],
-                                          joints[0],
-                                          joints[1],
-                                          toe_loc,
-                                          heel_loc,
-                                          foot_ctrl=limb_rig.arm_ik.ik_ctrl.get_ctrl(),
-                                          blend_ctrl=limb_rig.blend_ctrl.get_ctrl(),
-                                          attach_joint=limb_rig.driven[-1],
-                                          ik_hdl_offset=limb_rig.arm_ik.ik_hdl_grp,
-                                          leg_ik_end=limb_rig.ik_joints[-1],
-                                          leg_fk_end=limb_rig.fk_joints[-1],
-                                          prefix=prefix,
-                                          scale=scale,
-                                          base_rig=self.base_rig)
+                                         joints[0].split("|")[-1],
+                                         joints[1].split("|")[-1],
+                                         toe_loc,
+                                         heel_loc,
+                                         foot_ctrl=limb_rig.arm_ik.ik_ctrl.get_ctrl(),
+                                         blend_ctrl=limb_rig.blend_ctrl.get_ctrl(),
+                                         attach_joint=limb_rig.driven[-1],
+                                         ik_hdl_offset=limb_rig.arm_ik.ik_hdl_grp,
+                                         leg_ik_end=limb_rig.ik_joints[-1],
+                                         leg_fk_end=limb_rig.fk_joints[-1],
+                                         prefix=prefix,
+                                         scale=scale,
+                                         base_rig=self.base_rig)
                     foot_rig.create()
+                    pm.select(None)
                 else:
-                    foot_rig = foot.Foot(joints[0],
-                                          joints[1],
-                                          joints[2],
-                                          toe_loc,
-                                          heel_loc,
-                                          prefix=prefix,
-                                          scale=scale,
-                                          base_rig=self.base_rig)
+                    # temp solution when mirroring footBall joints...
+                    print("TRYING TO RENAME WTFFFF")
+                    print (joints[1])
+                    if pm.ls("r_footBalr_result_jnt"):
+                        if joints[1] == "r_footBalr_result_jnt":
+                            joints[1].rename("r_footBall_result_jnt")
+                    foot_rig = foot.Foot(joints[0].split("|")[-1],
+                                         joints[1].split("|")[-1],
+                                         joints[2].split("|")[-1],
+                                         toe_loc,
+                                         heel_loc,
+                                         prefix=prefix,
+                                         scale=scale,
+                                         base_rig=self.base_rig)
                     foot_rig.create()
-
+                    pm.select(None)
+                    
             if get_module == 'Limb':
                 limb_rig = limb.Limb(driven=joints,
-                                      spaces=spaces,
-                                      parent_joint=parent_joint,
-                                      stretch=True,
-                                      prefix=prefix,
-                                      scale=scale,
-                                      base_rig=self.base_rig,
-                                      do_spaces_in_limb=True)
+                                     spaces=spaces,
+                                     parent_joint=parent_joint,
+                                     stretch=True,
+                                     prefix=prefix,
+                                     scale=scale,
+                                     base_rig=self.base_rig,
+                                     do_spaces_in_limb=True)
                 limb_rig.__class__ = limb.Limb
                 limb_rig.create()
                 """WHEN CREATING LIMB CHECK IF FOOT MODULE IS CHILD OF CURRENT MODULE THEN GET IK AND FK CONTROLLERS"""
