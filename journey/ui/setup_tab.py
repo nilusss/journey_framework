@@ -257,7 +257,8 @@ class SetupTabUI(QtWidgets.QWidget):
                 for data in jdata:
                     try:
                         obj = se.deserialize_guide(data)
-                    except:
+                    except Exception as e:
+                        print('Cant import \n' + str(e))
                         pm.confirmDialog(title='File Error!', message='Loaded file is not a valid preset file',
                                          button=['Ok'], defaultButton='Ok')
                         break

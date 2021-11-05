@@ -467,7 +467,7 @@ def create_loc(pos):
     return loc
 
 
-def get_pole_vec_pos(joint_list):
+def fget_pole_vec_pos(joint_list):
     """Create a locator from the joint list
     Args:
         joint_list: list(str), joint list to get the pole vector position from
@@ -688,6 +688,7 @@ def simple_twist(end, twist_joints='', start='', amount=''):
     Returns:
         list, twist joint chain
     """
+    twist_joints = list_check(twist_joints)
     # if arguments are passed create a twist joint chain
     if start and end and amount:
         twist_joints = insert_joints(start, end, amount, trans_first=True, first=True)

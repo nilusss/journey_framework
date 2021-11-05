@@ -7,17 +7,23 @@ TODO: make code more readable.
 TODO: Test with other modules
 """
 
+import sys
 import json
+import importlib
 
 
 def decode_module(o):
     import journey.lib.modules as mo
     if o.get('CLASS_NAME'):
         module = str(o.get('CLASS_NAME')).lower()
-        exec ("return_class = mo.{}.{}()".format(module, o.get('CLASS_NAME')))
-        return_class = locals()['return_class']
-        a = return_class
-        a.__dict__.update((k, v) for k, v in o.iteritems())
+        class_ = getattr(importlib.import_module("journey.lib.modules"), o.get('CLASS_NAME'))
+        # exec ("return_class = mo.{}.{}()".format(module, o.get('CLASS_NAME')))
+        # return_class = locals()['return_class']
+        a = class_()
+        if sys.version_info.major >= 3:
+            a.__dict__.update((k, v) for k, v in o.items())
+        else:
+            a.__dict__.update((k, v) for k, v in o.iteritems())
         return (a)
     return o
 
@@ -26,10 +32,15 @@ def decode_guide(o):
     import journey.lib.guides as guides
     if o.get('CLASS_NAME'):
         # print(o.get('prefix')
-        exec("return_class = guides.{}(prefix='{}')".format(o.get('CLASS_NAME'), o.get('prefix')))
-        return_class = locals()['return_class']
+        # exec("return_class = guides.{}(prefix='{}')".format(o.get('CLASS_NAME'), o.get('prefix')))
+        # return_class = locals()['return_class']
+        class_ = getattr(importlib.import_module("journey.lib.guides"), o.get('CLASS_NAME'))
+        return_class = class_(o.get('prefix'))
         a = return_class
-        a.__dict__.update((k, v) for k, v in o.iteritems())
+        if sys.version_info.major >= 3:
+            a.__dict__.update((k, v) for k, v in o.items())
+        else:
+            a.__dict__.update((k, v) for k, v in o.iteritems())
         return (a)
     return o
 
