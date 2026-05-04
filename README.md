@@ -2,6 +2,7 @@
 # Journey Framework
 
 Modular rigging framework for Autodesk Maya
+
 Bachelor Project
 
 
